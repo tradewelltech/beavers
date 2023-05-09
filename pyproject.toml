@@ -1,0 +1,65 @@
+
+[tool.poetry]
+name = "beavers"
+version = "0.0.0"
+description = "Python stream processing"
+authors = ["Tradewell Tech <engineering@tradewelltech.co>"]
+maintainers = ["0x26res <0x26res@gmail.com>"]
+packages = [
+    { include = "beavers" }
+]
+readme = "README.md"
+license = "Apache-2.0"
+repository = "https://github.com/tradewelltech/beavers"
+documentation = "https://beavers.readthedocs.io/en/latest/"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+keywords = ["apache-arrow", "streaming", "data"]
+
+[tool.poetry.dependencies]
+pandas = ">1.4.0"
+python = ">=3.8,<3.12"
+
+[tool.poetry.group.dev.dependencies]
+black = "^22.10.0"
+coverage = ">=6.5.0"
+flake8 = ">=5.0.4"
+isort = ">=5.10.1"
+mkdocs = ">=1.4.2"
+pip-tools = "^6.12.1"
+pre-commit = ">=2.20.0"
+pylint = ">=2.15.0"
+pytest = ">=7.2.0"
+mkdocs-material = "^9.0.3"
+
+
+[build-system]
+requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]
+build-backend = "poetry_dynamic_versioning.backend"
+
+[tool.black]
+target-version =  ['py310']
+exclude = "venv/|tox/"
+
+[tool.isort]
+profile = "black"
+src_paths = ["beavers", "tests"]
+known_first_party = ["beavers"]
+skip = [".gitignore"]
+
+[tool.bandit]
+skips = ["B101", "B311"]
+
+[tool.poetry-dynamic-versioning]
+enable = true
+
+[tool.poetry-dynamic-versioning.substitution]
+files = ["*/__init__.py"]
+folders = [ {path = "beavers"}]
