@@ -63,3 +63,6 @@ enable = true
 [tool.poetry-dynamic-versioning.substitution]
 files = ["*/__init__.py"]
 folders = [ {path = "beavers"}]
+
+[tool.ruff]
+line-length = 88

@@ -4,6 +4,7 @@ import time
 import pandas as pd
 import pytest
 
+from beavers.engine import UTC_EPOCH, UTC_MAX, Dag, TimerManager
 from tests.test_util import (
     GetLatest,
     SetATimer,
@@ -13,7 +14,6 @@ from tests.test_util import (
     add_no_42,
     join_counts,
 )
-from beavers.engine import UTC_EPOCH, UTC_MAX, Dag, TimerManager
 
 
 def test_state_positional():

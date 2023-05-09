@@ -1,7 +1,7 @@
 import collections
 import dataclasses
 import random
-from typing import Dict, Generic, Optional, TypeVar
+from typing import Dict, Generic, TypeVar
 
 import pandas as pd
 
@@ -68,7 +68,6 @@ def join_counts(**kwargs: Dict[str, int]) -> pd.DataFrame:
     ).fillna(0)
 
 
-
 @dataclasses.dataclass(frozen=True)
 class TimerEntry:
     timestamp: pd.Timestamp
@@ -102,4 +101,3 @@ def create_word_count_dag() -> tuple[Dag, WordCount]:
     records = dag.stream(lambda x, y: {v: y[v] for v in x}, {}).map(changed_key, state)
     dag.sink("results", records)
     return dag, word_count
-
