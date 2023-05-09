@@ -160,6 +160,8 @@ cython_debug/
 #.idea/
 
 # Custom
-/venv
+/.idea
 /.pytest_cache
+/.ruff_cache
 /poetry.lock
+/venv
