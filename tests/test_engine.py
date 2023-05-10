@@ -4,7 +4,7 @@ import time
 import pandas as pd
 import pytest
 
-from beavers.engine import UTC_EPOCH, UTC_MAX, Dag, TimerManager
+from beavers.engine import UTC_EPOCH, UTC_MAX, Dag, NodeInputs, TimerManager
 from tests.test_util import (
     GetLatest,
     SetATimer,
@@ -110,7 +110,7 @@ def test_scalar():
     dag.stabilize()
     assert z.get_value() == 42
 
-    with pytest.raises(AssertionError, match="Only sources can be updated"):
+    with pytest.raises(TypeError, match="Only SourceStreamFunction can be set"):
         z.set_stream(34)
 
 
@@ -177,7 +177,7 @@ def test_add_stream():
 def test_map_stream_with_async_calls():
     async def get_square(x: int) -> int:
         """Waits for one second and then computes the square of the given int"""
-        await asyncio.sleep(1)
+        await asyncio.sleep(0.1)
         return x * x
 
     async def get_squares(xs: list[int]) -> list[int]:
@@ -204,7 +204,7 @@ def test_map_stream_with_async_calls():
     # It should take just barely over a second to call dag.stabilize() since it should
     # run all calls to get_square(x) concurrently. If get_square(x) were a synchronous
     # function that took 1 second per call then we'd expect it to take about 7 seconds.
-    assert 1 <= (end_time - start_time) < 2
+    assert 0.1 <= (end_time - start_time) < 0.2
     assert async_node.get_value() == [0, 1, 4, 9, 16, 25, 36]
 
 
@@ -257,6 +257,48 @@ def test_cutoff_update():
     dag.stabilize()
     assert x.get_cycle_id() == dag.get_cycle_id()
     assert x_change_only.get_cycle_id() == dag.get_cycle_id() - 2
+
+
+def test_cutoff_custom():
+    dag = Dag()
+    x_source = dag.source_stream([], "x")
+    x = dag.state(GetLatest(1)).map(x_source)
+    x_change_only = dag.cutoff(x, comparator=lambda x, y: abs(x - y) < 0.1)
+
+    x_source.set_stream([1.0])
+    dag.stabilize()
+    assert x.get_value() == 1.0
+    assert x_change_only.get_value() == 1.0
+    assert x.get_cycle_id() == dag.get_cycle_id()
+    assert x_change_only.get_cycle_id() == dag.get_cycle_id()
+
+    dag.stabilize()
+    assert x.get_cycle_id() == dag.get_cycle_id() - 1
+    assert x_change_only.get_cycle_id() == dag.get_cycle_id() - 1
+
+    x_source.set_stream([1.01])
+    dag.stabilize()
+    assert x.get_cycle_id() == dag.get_cycle_id()
+    assert x_change_only.get_cycle_id() == dag.get_cycle_id() - 2
+
+    x_source.set_stream([1.09])
+    dag.stabilize()
+    assert x.get_cycle_id() == dag.get_cycle_id()
+    assert x_change_only.get_cycle_id() == dag.get_cycle_id() - 3
+
+    x_source.set_stream([1.11])
+    dag.stabilize()
+    assert x.get_cycle_id() == dag.get_cycle_id()
+    assert x_change_only.get_cycle_id() == dag.get_cycle_id()
+    assert x_change_only.get_value() == 1.11
+
+
+def test_cutoff_not_callable():
+    dag = Dag()
+    x_source = dag.source_stream([], "x")
+    x = dag.state(GetLatest(1)).map(x_source)
+    with pytest.raises(TypeError, match="`comparator` should be callable"):
+        dag.cutoff(x, comparator="not a callable")
 
 
 def test_silence():
@@ -398,7 +440,7 @@ def test_duplicate_source():
 def test_duplicate_source_different_empty():
     dag = Dag()
     dag.source_stream([], "source_1")
-    with pytest.raises(AssertionError, match=r"Duplicate source: source_1"):
+    with pytest.raises(ValueError, match=r"Duplicate source: source_1"):
         dag.source_stream({}, "source_1")
 
 
@@ -427,3 +469,72 @@ def test_node_with_same_input_mixed():
     assert node.inputs.positional == (source_1,)
     assert node.inputs.key_word == {"b": source_1}
     assert node.inputs.nodes == (source_1,)
+
+
+def test_wrong_usage():
+    dag = Dag()
+    with pytest.raises(TypeError, match="`empty` should implement `__len__`"):
+        dag.stream(lambda x: x, None)
+
+
+def test_add_existing_node():
+    dag = Dag()
+    source = dag.source_stream([], "source")
+    node = dag.stream(lambda x: x, []).map(source)
+    with pytest.raises(ValueError, match="New Node can't have observers"):
+        dag._add_node(source)
+    with pytest.raises(ValueError, match="Node already in dag"):
+        dag._add_node(node)
+
+
+def test_mixed_dags():
+    dag = Dag()
+    other_dag = Dag()
+    other_source = other_dag.source_stream([], "source")
+    with pytest.raises(ValueError, match="Input Node not in dag"):
+        dag.stream(lambda x: x, []).map(other_source)
+
+
+def test_get_sink_value_on_other_node():
+    dag = Dag()
+    source = dag.source_stream([], "source")
+    node = dag.stream(lambda x: x, []).map(source)
+    with pytest.raises(TypeError, match="Only SinkFunction can be read"):
+        node.get_sink_value()
+
+
+def test_node_inputs_kwargs_not_str():
+    dag = Dag()
+    source = dag.source_stream([], "source")
+    with pytest.raises(TypeError, match="class 'int'"):
+        NodeInputs.create([], {1: source})
+
+
+def test_node_inputs_not_node():
+    with pytest.raises(TypeError, match="Inputs should be `Node`, got <class 'str'>"):
+        NodeInputs.create(["foo"], {})
+
+
+def test_node_not_function():
+    dag = Dag()
+    with pytest.raises(TypeError, match="`function` should be a callable"):
+        dag.stream("foo", [])
+    with pytest.raises(TypeError, match="`function` should be a callable"):
+        dag.state("foo")
+
+
+def test_stream_empty_not_empty():
+    dag = Dag()
+    with pytest.raises(TypeError, match=r"`len\(empty\)` should be 0"):
+        dag.stream("foo", [1])
+    with pytest.raises(TypeError, match="`empty` should implement `__len__`"):
+        dag.stream("foo", 1)
+
+
+def test_recalculate_clean_node():
+    dag = Dag()
+    source = dag.source_stream([])
+    node = dag.stream(lambda x: x, []).map(source)
+    node._recalculate(1)
+    with pytest.raises(RuntimeError, match="Calling recalculate on un-notified node"):
+        node._recalculate(2)
