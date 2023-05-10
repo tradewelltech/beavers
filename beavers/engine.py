@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import collections.abc
 import dataclasses
 import operator
 import typing
@@ -127,12 +128,13 @@ class NodeInputs:
     ) -> "NodeInputs":
         all_nodes = []
         for node in positional:
-            assert isinstance(node, Node)
+            _check_input(node)
             if node not in all_nodes:
                 all_nodes.append(node)
         for key, node in key_word.items():
-            assert isinstance(key, str)
-            assert isinstance(node, Node)
+            if not isinstance(key, str):
+                raise TypeError(type(key))
+            _check_input(node)
             if node not in all_nodes:
                 all_nodes.append(node)
 
@@ -187,14 +189,14 @@ class Node(typing.Generic[T]):
         return self.runtime_data.cycle_id
 
     def set_stream(self, value: T):
-        assert isinstance(
-            self.function, SourceStreamFunction
-        ), "Only sources can be updated"
+        if not isinstance(self.function, SourceStreamFunction):
+            raise TypeError(f"Only {SourceStreamFunction.__name__} can be set")
         self.function.set(value)
         self._stain()
 
     def get_sink_value(self) -> typing.Any:
-        assert isinstance(self.function, SinkFunction), "Only sinks can be read"
+        if not isinstance(self.function, SinkFunction):
+            raise TypeError(f"Only {SinkFunction.__name__} can be read")
         return self.function.get()
 
     def _stain(self):
@@ -207,8 +209,6 @@ class Node(typing.Generic[T]):
             if self._is_stream():
                 self.runtime_data.value = self.empty
                 self.runtime_data.notifications = 0
-            else:
-                assert self.runtime_data.notifications == 0
 
     def _is_stream(self) -> bool:
         return self.empty is not _STATE_EMPTY
@@ -220,7 +220,8 @@ class Node(typing.Generic[T]):
         return self.runtime_data.notifications != 0
 
     def _recalculate(self, cycle_id: int):
-        assert self._should_recalculate()
+        if not self._should_recalculate():
+            raise RuntimeError("Calling recalculate on un-notified node")
 
         positional_values = [node.get_value() for node in self.inputs.positional]
         key_word_values = {
@@ -245,7 +246,6 @@ class Node(typing.Generic[T]):
             else:
                 return False
         else:
-            assert self._is_stream()
             self.runtime_data.value = updated_value
             return len(updated_value) > 0
 
@@ -289,11 +289,13 @@ class Dag:
         )
 
     def source_stream(self, empty: T, name: str = None) -> Node[T]:
-        assert len(empty) == 0
+        _check_empty(empty)
         existing = self._sources.get(name) if name else None
         if existing is not None:
-            assert existing.empty == empty, f"Duplicate source: {name}"
-            return existing
+            if existing.empty != empty:
+                raise ValueError(f"Duplicate source: {name}")
+            else:
+                return existing
         else:
             node = self._add_stream(
                 function=SourceStreamFunction(empty, name),
@@ -305,12 +307,17 @@ class Dag:
             return node
 
     def stream(self, function: typing.Callable[P, T], empty: T) -> NodePrototype:
+        _check_empty(empty)
+        _check_function(function)
+
         def add_to_dag(inputs: NodeInputs) -> Node:
             return self._add_stream(function, empty, inputs)
 
         return NodePrototype(add_to_dag)
 
     def state(self, function: typing.Callable[P, T]) -> NodePrototype[T]:
+        _check_function(function)
+
         def add_to_dag(inputs: NodeInputs) -> Node:
             return self._add_state(function, inputs)
 
@@ -344,8 +351,9 @@ class Dag:
     def cutoff(
         self, node: Node[T], comparator: typing.Callable[[T, T], T] = operator.eq
     ) -> Node[T]:
-        assert isinstance(node, Node)
-        assert callable(comparator)
+        _check_input(node)
+        if not callable(comparator):
+            raise TypeError("`comparator` should be callable")
         return self._add_node(
             Node.create(
                 function=ValueCutOff(comparator), inputs=NodeInputs.create([node], {})
@@ -353,7 +361,7 @@ class Dag:
         )
 
     def silence(self, node: Node[T]) -> Node[T]:
-        assert isinstance(node, Node)
+        _check_input(node)
         return self._add_node(
             Node.create(
                 function=SilentUpdate,
@@ -382,11 +390,8 @@ class Dag:
     def _add_stream(
         self, function: typing.Callable[[...], T], empty: T, inputs: NodeInputs
     ) -> Node[T]:
-        # TODO: check at least one input is stream
-        assert len(empty) == 0
-        assert function is not None
-        assert callable(function)
-
+        _check_function(function)
+        _check_empty(empty)
         return self._add_node(
             Node.create(value=empty, function=function, inputs=inputs, empty=empty)
         )
@@ -417,13 +422,42 @@ class Dag:
     def _add_state(
         self, function: typing.Callable[[...], T], inputs: NodeInputs
     ) -> Node[T]:
-        assert function is not None
-        assert callable(function)
+        _check_function(function)
         return self._add_node(Node.create(function=function, inputs=inputs))
 
     def _add_node(self, node: Node) -> Node:
-        assert len(node.observers) == 0
+        if len(node.observers) > 0:
+            raise ValueError(f"New {Node.__name__} can't have observers")
+        if node in self._nodes:
+            raise ValueError(f"{Node.__name__} already in dag")
         for input_node in node.inputs.input_nodes():
+            if input_node not in self._nodes:
+                raise ValueError(f"Input {Node.__name__} not in dag")
             input_node.observers.append(node)
         self._nodes.append(node)
         return node
+
+
+def _check_empty(empty: T) -> T:
+    if not isinstance(empty, collections.abc.Sized):
+        raise TypeError("`empty` should implement `__len__`")
+    elif len(empty) != 0:
+        raise TypeError("`len(empty)` should be 0")
+    else:
+        return empty
+
+
+def _check_input(node: Node) -> Node:
+    if not isinstance(node, Node):
+        raise TypeError(f"Inputs should be `{Node.__name__}`, got {type(node)}")
+    else:
+        return node
+
+
+def _check_function(
+    function: typing.Callable[typing.ParamSpec, T]
+) -> typing.Callable[typing.ParamSpec, T]:
+    if not callable(function):
+        raise TypeError("`function` should be a callable")
+    else:
+        return function
