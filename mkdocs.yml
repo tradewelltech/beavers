@@ -1,0 +1,17 @@
+site_name: Beavers
+site_url: https://beavers.readthedocs.io/en/latest/
+
+theme:
+  name: material
+  palette:
+    scheme: slate
+
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            show_source: false

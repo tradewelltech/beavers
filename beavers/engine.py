@@ -263,6 +263,10 @@ class NodePrototype(typing.Generic[T]):
 
 
 class Dag:
+    """
+    Main class used for building and executing dags
+    """
+
     def __init__(self):
         self._nodes: list[Node] = []
         self._sources: dict[str, Node] = {}

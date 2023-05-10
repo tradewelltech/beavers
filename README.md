@@ -25,13 +25,13 @@ in both realtime and batch jobs.
 # Key Features
 
 
-* Works in real time (eg: reading from kafka) and replay mode (eg: reading from parquet)
+* Works in **real time** (eg: reading from kafka) and **replay mode** (eg: reading from parquet)
 * Optimized for analytics, it uses micro-batching (instead of processing records one by one)
 * Similar to [incremental](https://github.com/janestreet/incremental), it  updates nodes in a dag incrementally
 * Taking inspiration from [kafka streams](https://www.confluent.io/blog/kafka-streams-tables-part-1-event-streaming/), there are two types of nodes in the dag:
   * Stream: ephemeral micro-batches of events (cleared after every cycle)
   * State: durable state derived from streams
-* Clear separation between the dag (which contains the business logic) and the IO (where the data comes from/goes). 
+* Clear separation between the business logic and the IO. 
   So the same dag can be used in real time mode, replay mode or can be easily tested.
 
 
