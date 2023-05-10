@@ -46,7 +46,7 @@ in both realtime and batch jobs.
 [doc-image]: https://readthedocs.org/projects/beavers/badge/?version=latest
 [doc-url]: https://beavers.readthedocs.io/en/latest/?badge=latest
 [license-image]: http://img.shields.io/:license-Apache%202-blue.svg
-[license-url]: https://github.com/tradewelltech/beavers/blob/master/LICENSE
+[license-url]: https://github.com/tradewelltech/beavers/blob/main/LICENSE
 [codecov-image]: https://codecov.io/gh/tradewelltech/beavers/branch/main/graph/badge.svg?token=GY6KL7NT1Q
 [codecov-url]: https://codecov.io/gh/tradewelltech/beavers
 [downloads-image]: https://pepy.tech/badge/beavers
