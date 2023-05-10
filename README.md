@@ -1,3 +1,4 @@
+
 [![PyPI Version][pypi-image]][pypi-url]
 [![Python Version][versions-image]][versions-url]
 [![Github Stars][stars-image]][stars-url]
@@ -9,7 +10,7 @@
 [![Downloads][downloads-month-image]][downloads-month-url]
 [![Code style: black][codestyle-image]][codestyle-url]
 [![snyk][snyk-image]][snyk-url]
-
+[![CI][ci-image]][ci-url]
 
 
 # Beavers
@@ -57,3 +58,5 @@ in both realtime and batch jobs.
 [codestyle-url]: https://github.com/ambv/black
 [snyk-image]: https://snyk.io/advisor/python/beavers/badge.svg
 [snyk-url]: https://snyk.io/advisor/python/beavers
+[ci-image]: https://github.com/tradewelltech/beavers/actions/workflows/ci.yaml/badge.svg
+[ci-url]: https://github.com/tradewelltech/beavers/actions/workflows/ci.yaml
