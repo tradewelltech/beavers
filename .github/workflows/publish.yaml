@@ -2,7 +2,7 @@ name: Publish to PyPI
 
 on:
   release:
-    typ es: [ published ]
+    types: [ published ]
     branches: [ main ]
   workflow_dispatch:
 
