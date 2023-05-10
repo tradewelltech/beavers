@@ -1,3 +1,6 @@
+"""
+Dag and Nodes, main components of a beavers engine
+"""
 from __future__ import annotations
 
 import collections.abc
