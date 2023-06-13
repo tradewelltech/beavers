@@ -2,7 +2,7 @@ from typing import Any, Optional, Sequence, TypeVar
 
 import pandas as pd
 
-from beavers.engine import UTC_MAX, Dag
+from beavers.engine import Dag
 
 T = TypeVar("T")
 
@@ -24,12 +24,6 @@ class DagTestBench:
 
     def run(self, now: Optional[pd.Timestamp] = None) -> "DagTestBench":
         self.dag.stabilize(now)
-        return self
-
-    def run_for_next_timer(self) -> "DagTestBench":
-        next_timer = self.dag.get_next_timer()
-        assert next_timer != UTC_MAX
-        self.dag.stabilize(next_timer)
         return self
 
     def assert_sink_list(
