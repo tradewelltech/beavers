@@ -66,3 +66,6 @@ folders = [ {path = "beavers"}]
 
 [tool.ruff]
 line-length = 88
+
+[tool.pydocstyle]
+ignore = ["D102", "D107", "D203", "D212"]
