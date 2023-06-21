@@ -1,11 +1,12 @@
 import collections
 import dataclasses
 import random
-from typing import Dict, Generic, TypeVar
+from typing import Callable, Dict, Generic, TypeVar
 
 import pandas as pd
 
-from beavers.engine import Dag, TimerManager
+from beavers.engine import UTC_MAX, Dag, TimerManager
+from beavers.replay import DataSink, DataSource
 
 T = TypeVar("T")
 
@@ -101,3 +102,37 @@ def create_word_count_dag() -> tuple[Dag, WordCount]:
     records = dag.stream(lambda x, y: {v: y[v] for v in x}, {}).map(changed_key, state)
     dag.sink("results", records)
     return dag, word_count
+
+
+class ListDataSource(DataSource[list[T]]):
+    def __init__(self, data: list[T], extractor: Callable[[T], pd.Timestamp]):
+        self._data = data
+        self._extractor = extractor
+        self._position = 0
+
+    def read_to(self, timestamp: pd.Timestamp) -> list[T]:
+        results = []
+        while (
+            self._position < len(self._data)
+            and self._extractor(self._data[self._position]) <= timestamp
+        ):
+            results.append(self._data[self._position])
+            self._position += 1
+        return results
+
+    def get_next(self) -> pd.Timestamp:
+        if self._position >= len(self._data):
+            return UTC_MAX
+        else:
+            return self._extractor(self._data[self._position])
+
+
+class ListDataSink(DataSink[list[T]]):
+    def __init__(self):
+        self._data = []
+
+    def append(self, timestamp: pd.Timestamp, data: list[T]):
+        self._data.extend(data)
+
+    def close(self):
+        pass
