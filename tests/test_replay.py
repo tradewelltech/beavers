@@ -10,6 +10,7 @@ from beavers.replay import (
     IteratorDataSourceAdapter,
     ReplayContext,
     ReplayDriver,
+    T,
     _create_sinks,
     _create_sources,
 )
@@ -162,4 +163,58 @@ def test_iterator_data_source_adapter_run_one_by_one():
 def test_iterator_data_source_empty():
     adapter = create_adapter([])
     assert adapter.get_next() == UTC_MAX
+    assert adapter.read_to(UTC_MAX) == []
     assert adapter.get_next() == UTC_MAX
+    assert adapter.read_to(UTC_MAX) == []
+
+
+def test_iterator_data_source_all_empty():
+    adapter = create_adapter([[], []])
+    assert adapter.get_next() == UTC_MAX
+    assert adapter.read_to(UTC_MAX) == []
+    assert adapter.get_next() == UTC_MAX
+    assert adapter.read_to(UTC_MAX) == []
+
+
+class CornerCaseTester(DataSource[list[Word]]):
+    def __init__(self, timestamp: pd.Timestamp):
+        self._timestamp = timestamp
+        self._read = False
+
+    def read_to(self, timestamp: pd.Timestamp) -> list[T]:
+        self._read = True
+        return []
+
+    def get_next(self) -> pd.Timestamp:
+        if self._read:
+            return UTC_MAX
+        else:
+            return self._timestamp
+
+
+def test_iterator_data_source_cutoff():
+    """
+    Test a tricky corner case were the underlying DataSource of
+     IteratorDataSourceAdapter doesn't behave as expected.
+    """
+    timestamp = pd.to_datetime("2022-01-01", utc=True)
+    adapter = IteratorDataSourceAdapter(
+        (
+            source
+            for source in [
+                CornerCaseTester(timestamp + pd.Timedelta(minutes=1)),
+                ListDataSource(
+                    [Word(timestamp + pd.Timedelta(minutes=2), "hello")],
+                    attrgetter("timestamp"),
+                ),
+            ]
+        ),
+        [],
+        lambda left, right: left + right,
+    )
+
+    assert adapter.read_to(UTC_MAX) == [
+        Word(
+            timestamp=pd.Timestamp("2022-01-01 00:02:00+0000", tz="UTC"), value="hello"
+        )
+    ]
