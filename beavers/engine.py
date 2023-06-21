@@ -263,6 +263,10 @@ class NodePrototype(typing.Generic[T]):
         return self._add_to_dag(NodeInputs.create(positional=args, key_word=kwargs))
 
 
+def _unchanged_callback():
+    return _STATE_UNCHANGED
+
+
 class Dag:
     """
     Main class used for building and executing dags
@@ -282,7 +286,7 @@ class Dag:
     def const(self, value: T) -> Node[T]:
         return self._add_node(
             Node.create(
-                function=lambda x: _STATE_UNCHANGED,
+                function=_unchanged_callback,
                 inputs=NO_INPUTS,
                 value=value,
                 notifications=0,

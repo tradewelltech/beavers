@@ -4,7 +4,15 @@ import time
 import pandas as pd
 import pytest
 
-from beavers.engine import UTC_EPOCH, UTC_MAX, Dag, NodeInputs, TimerManager
+from beavers.engine import (
+    _STATE_UNCHANGED,
+    UTC_EPOCH,
+    UTC_MAX,
+    Dag,
+    NodeInputs,
+    TimerManager,
+    _unchanged_callback,
+)
 from tests.test_util import (
     GetLatest,
     SetATimer,
@@ -538,3 +546,7 @@ def test_recalculate_clean_node():
     node._recalculate(1)
     with pytest.raises(RuntimeError, match="Calling recalculate on un-notified node"):
         node._recalculate(2)
+
+
+def test_unchanged_callback():
+    assert _unchanged_callback() is _STATE_UNCHANGED
