@@ -1,6 +1,3 @@
-
-
-
 ::: beavers.engine
     options:
         heading_level: 2
