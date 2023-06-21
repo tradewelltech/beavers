@@ -538,3 +538,16 @@ def test_recalculate_clean_node():
     node._recalculate(1)
     with pytest.raises(RuntimeError, match="Calling recalculate on un-notified node"):
         node._recalculate(2)
+
+
+def test_const():
+    dag = Dag()
+    const = dag.const(2)
+    source = dag.source_stream([])
+    node = dag.stream(lambda x, factor: x * factor, []).map(source, const)
+    dag.stabilize()
+    assert node.get_value() == []
+
+    source.set_stream([1])
+    dag.stabilize()
+    assert node.get_value() == [1, 1]
