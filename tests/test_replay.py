@@ -96,6 +96,29 @@ def test_pass_through_replay(replay_context: ReplayContext):
     assert sink._data == source._data
 
 
+def test_no_op_through_replay(replay_context: ReplayContext):
+    """
+    Test a corner case of the driver were a sink did not update during a cycle
+    """
+    sink = ListDataSink()
+    dag = Dag()
+    dag.source_stream(empty=[], name="words_1")
+    source_2 = dag.source_stream(empty=[], name="words_2")
+    dag.sink("words", source_2)
+
+    driver = ReplayDriver.create(
+        dag,
+        replay_context,
+        {
+            "words_1": create_data_source,
+            "words_2": lambda _: ListDataSource([], attrgetter("timestamp")),
+        },
+        {"words": lambda _: sink},
+    )
+    driver.run()
+    assert sink._data == []
+
+
 def create_data_groups() -> list[list[Word]]:
     timestamp = pd.to_datetime("2022-01-01", utc=True)
     return [
