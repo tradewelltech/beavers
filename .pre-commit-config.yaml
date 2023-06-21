@@ -29,3 +29,10 @@ repos:
         additional_dependencies:
           - toml
         args: [--config=pyproject.toml]
+  - repo: https://github.com/pycqa/pydocstyle
+    rev: 6.3.0
+    hooks:
+      - id: pydocstyle
+        files: ^beavers/replay.py
+        additional_dependencies:
+          - tomli

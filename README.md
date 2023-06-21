@@ -13,7 +13,7 @@
 # Beavers
 _____
 
-**Beavers** is a python library for stream processing, optimize for analytics. 
+**Beavers** is a python library for stream processing, optimized for analytics. 
 
 
 It is used at [Tradewell Technologies](https://www.tradewelltech.co/), 
