@@ -15,3 +15,6 @@ plugins:
         python:
           options:
             show_source: false
+
+markdown_extensions:
+  - pymdownx.snippets:

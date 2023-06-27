@@ -33,12 +33,12 @@ def test_state_positional():
 
     z = dag.state(add).map(x, y)
 
-    dag.stabilize()
+    dag.execute()
 
     assert 3 == z.get_value()
 
     x_source.set_stream([5])
-    dag.stabilize()
+    dag.execute()
     assert 7 == z.get_value()
 
 
@@ -51,11 +51,11 @@ def test_map_state_key_word():
 
     z = dag.state(add).map(left=x, right=y)
 
-    dag.stabilize()
+    dag.execute()
     assert 3 == z.get_value()
 
     x_source.set_stream([5])
-    dag.stabilize()
+    dag.execute()
     assert 7 == z.get_value()
 
 
@@ -69,7 +69,7 @@ def test_map_positional_and_key_word_not_valid():
     dag.state(add).map(x, left=y)
 
     with pytest.raises(TypeError, match=r"got multiple values for argument"):
-        dag.stabilize()
+        dag.execute()
 
 
 def test_map_runtime_failure():
@@ -81,12 +81,12 @@ def test_map_runtime_failure():
 
     z = dag.state(add_no_42).map(x, y)
 
-    dag.stabilize()
+    dag.execute()
     assert 41 == z.get_value()
 
     y_source.set_stream([2])
     with pytest.raises(ValueError, match=r".* == 42$"):
-        dag.stabilize()
+        dag.execute()
 
 
 def test_using_lambda():
@@ -99,7 +99,7 @@ def test_using_lambda():
 
     w = dag.state(lambda left, right: left - right).map(y, z)
 
-    dag.stabilize()
+    dag.execute()
     assert w.get_value() == -40
 
 
@@ -110,12 +110,12 @@ def test_scalar():
     y = dag.state(GetLatest(1)).map(y_source)
     z = dag.state(add).map(x, y)
 
-    dag.stabilize()
+    dag.execute()
     assert z.get_value() == 41
 
     y_source.set_stream([2])
     assert z.get_value() == 41
-    dag.stabilize()
+    dag.execute()
     assert z.get_value() == 42
 
     with pytest.raises(TypeError, match="Only _SourceStreamFunction can be set"):
@@ -135,7 +135,7 @@ def test_stream_to_state():
 
     hello_stream.set_stream(["foo", "bar", "foo"])
     world_stream.set_stream(["z", "x", "y"])
-    dag.stabilize()
+    dag.execute()
     assert 1 == both.get_cycle_id()
     assert both.get_value()["hello"]["foo"] == 2
     assert both.get_value()["hello"]["z"] == 0
@@ -144,19 +144,19 @@ def test_stream_to_state():
 
     hello_stream.set_stream(["foo"])
     world_stream.set_stream(["z"])
-    dag.stabilize()
+    dag.execute()
     assert 2 == both.get_cycle_id()
     assert both.get_value()["hello"]["foo"] == 3
     assert both.get_value()["hello"]["z"] == 0
     assert both.get_value()["world"]["foo"] == 0
     assert both.get_value()["world"]["z"] == 2
 
-    dag.stabilize()  # Nothing should happen here as inputs are flushed
+    dag.execute()  # Nothing should happen here as inputs are flushed
     assert 2 == both.get_cycle_id()
 
     hello_stream.set_stream([])
     world_stream.set_stream([])
-    dag.stabilize()
+    dag.execute()
     assert 2, both.get_cycle_id()
 
 
@@ -166,7 +166,7 @@ def test_map_stream():
     source = dag.source_stream([])
     source.set_stream([1, 2, 3])
     plus_one = dag.stream(lambda x: [v + 1 for v in x], []).map(source)
-    dag.stabilize()
+    dag.execute()
 
     assert [2, 3, 4] == plus_one.get_value()
 
@@ -177,7 +177,7 @@ def test_add_stream():
     source = dag.source_stream([])
     source.set_stream([1, 2, 3])
     plus_one = dag.stream(lambda x: [v + 1 for v in x], []).map(source)
-    dag.stabilize()
+    dag.execute()
 
     assert [2, 3, 4] == plus_one.get_value()
 
@@ -206,10 +206,10 @@ def test_map_stream_with_async_calls():
     source.set_stream([0, 1, 2, 3, 4, 5, 6])
 
     start_time = time.time()
-    dag.stabilize()
+    dag.execute()
     end_time = time.time()
 
-    # It should take just barely over a second to call dag.stabilize() since it should
+    # It should take just barely over a second to call dag.execute() since it should
     # run all calls to get_square(x) concurrently. If get_square(x) were a synchronous
     # function that took 1 second per call then we'd expect it to take about 7 seconds.
     assert 0.1 <= (end_time - start_time) < 0.2
@@ -222,23 +222,23 @@ def test_time():
     add_time = dag.state(lambda x, t: [(v, t) for v in x]).map(source, dag.now())
 
     time0 = pd.to_datetime("2022-09-15", utc=True)
-    dag.stabilize(time0)
+    dag.execute(time0)
     assert add_time.get_value() == []
 
     time1 = time0 + pd.to_timedelta("2s")
     source.set_stream(["a"])
-    dag.stabilize(time1)
+    dag.execute(time1)
     assert add_time.get_value() == [("a", time1)]
 
     time2 = time0 + pd.to_timedelta("2s")
-    dag.stabilize(time2)
+    dag.execute(time2)
     assert add_time.get_value() == [
         ("a", time1)
     ], "Change of time isn't notified to clean/not stale node"
 
     time3 = time1 + pd.to_timedelta("4s")
     source.set_stream(["b"])
-    dag.stabilize(time3)
+    dag.execute(time3)
     assert add_time.get_value() == [
         ("b", time3)
     ], "Change of time is notified to stale node"
@@ -251,18 +251,18 @@ def test_cutoff_update():
     x_change_only = dag.cutoff(x)
 
     x_source.set_stream(["a"])
-    dag.stabilize()
+    dag.execute()
     assert x.get_value() == "a"
     assert x_change_only.get_value() == "a"
     assert x.get_cycle_id() == dag.get_cycle_id()
     assert x_change_only.get_cycle_id() == dag.get_cycle_id()
 
-    dag.stabilize()
+    dag.execute()
     assert x.get_cycle_id() == dag.get_cycle_id() - 1
     assert x_change_only.get_cycle_id() == dag.get_cycle_id() - 1
 
     x_source.set_stream(["a"])
-    dag.stabilize()
+    dag.execute()
     assert x.get_cycle_id() == dag.get_cycle_id()
     assert x_change_only.get_cycle_id() == dag.get_cycle_id() - 2
 
@@ -274,28 +274,28 @@ def test_cutoff_custom():
     x_change_only = dag.cutoff(x, comparator=lambda x, y: abs(x - y) < 0.1)
 
     x_source.set_stream([1.0])
-    dag.stabilize()
+    dag.execute()
     assert x.get_value() == 1.0
     assert x_change_only.get_value() == 1.0
     assert x.get_cycle_id() == dag.get_cycle_id()
     assert x_change_only.get_cycle_id() == dag.get_cycle_id()
 
-    dag.stabilize()
+    dag.execute()
     assert x.get_cycle_id() == dag.get_cycle_id() - 1
     assert x_change_only.get_cycle_id() == dag.get_cycle_id() - 1
 
     x_source.set_stream([1.01])
-    dag.stabilize()
+    dag.execute()
     assert x.get_cycle_id() == dag.get_cycle_id()
     assert x_change_only.get_cycle_id() == dag.get_cycle_id() - 2
 
     x_source.set_stream([1.09])
-    dag.stabilize()
+    dag.execute()
     assert x.get_cycle_id() == dag.get_cycle_id()
     assert x_change_only.get_cycle_id() == dag.get_cycle_id() - 3
 
     x_source.set_stream([1.11])
-    dag.stabilize()
+    dag.execute()
     assert x.get_cycle_id() == dag.get_cycle_id()
     assert x_change_only.get_cycle_id() == dag.get_cycle_id()
     assert x_change_only.get_value() == 1.11
@@ -316,14 +316,14 @@ def test_silence():
     x_silent = dag.silence(x)
 
     x_source.set_stream(["a"])
-    dag.stabilize()
+    dag.execute()
     assert x.get_value() == "a"
     assert x_silent.get_value() == "a"
     assert x.get_cycle_id() == dag.get_cycle_id()
     assert x_silent.get_cycle_id() == 0
 
     x_source.set_stream(["b"])
-    dag.stabilize()
+    dag.execute()
     assert x.get_value() == "b"
     assert x_silent.get_value() == "b"
     assert x.get_cycle_id() == dag.get_cycle_id()
@@ -336,11 +336,11 @@ def test_now():
     now = dag.now()
     assert now.get_value() == UTC_EPOCH
 
-    dag.stabilize(pd.to_datetime("2022-09-22", utc=True))
+    dag.execute(pd.to_datetime("2022-09-22", utc=True))
     assert now.get_value() == pd.to_datetime("2022-09-22", utc=True)
     assert now.get_cycle_id() == 0
 
-    dag.stabilize(pd.to_datetime("2022-09-23", utc=True))
+    dag.execute(pd.to_datetime("2022-09-23", utc=True))
     assert now.get_value() == pd.to_datetime("2022-09-23", utc=True)
     assert now.get_cycle_id() == 0
 
@@ -353,7 +353,7 @@ def test_timers():
     node = dag.stream(set_a_timer, []).map(timer_source, dag.now(), dag.timer_manager())
 
     assert dag.get_next_timer() == UTC_MAX
-    dag.stabilize(pd.to_datetime("2022-09-22", utc=True))
+    dag.execute(pd.to_datetime("2022-09-22", utc=True))
     assert dag.get_next_timer() == UTC_MAX
     assert node.get_value() == []
     assert node.get_cycle_id() == 0
@@ -361,22 +361,22 @@ def test_timers():
     timer_source.set_stream(
         [TimerEntry(pd.to_datetime("2022-09-24", utc=True), [1, 2, 3])]
     )
-    dag.stabilize(pd.to_datetime("2022-09-23", utc=True))
+    dag.execute(pd.to_datetime("2022-09-23", utc=True))
     assert node.get_cycle_id() == 0
     assert node.get_value() == []
     assert dag.get_next_timer() == pd.to_datetime("2022-09-24", utc=True)
 
-    dag.stabilize(pd.to_datetime("2022-09-23", utc=True))
+    dag.execute(pd.to_datetime("2022-09-23", utc=True))
     assert node.get_cycle_id() == 0
     assert node.get_value() == []
     assert dag.get_next_timer() == pd.to_datetime("2022-09-24", utc=True)
 
-    dag.stabilize(pd.to_datetime("2022-09-24", utc=True))
+    dag.execute(pd.to_datetime("2022-09-24", utc=True))
     assert node.get_value() == [1, 2, 3]
     assert node.get_cycle_id() == 4
     assert dag.get_next_timer() == UTC_MAX
 
-    dag.stabilize(pd.to_datetime("2022-09-25", utc=True))
+    dag.execute(pd.to_datetime("2022-09-25", utc=True))
     assert node.get_value() == []
     assert node.get_cycle_id() == 4
     assert dag.get_next_timer() == UTC_MAX
@@ -384,12 +384,12 @@ def test_timers():
     timer_source.set_stream(
         [TimerEntry(pd.to_datetime("2022-09-27", utc=True), [4, 5, 6])]
     )
-    dag.stabilize(pd.to_datetime("2022-09-26", utc=True))
+    dag.execute(pd.to_datetime("2022-09-26", utc=True))
     assert node.get_value() == []
     assert node.get_cycle_id() == 4
     assert dag.get_next_timer() == pd.to_datetime("2022-09-27", utc=True)
 
-    dag.stabilize(pd.to_datetime("2022-09-30", utc=True))
+    dag.execute(pd.to_datetime("2022-09-30", utc=True))
     assert node.get_value() == [4, 5, 6]
     assert node.get_cycle_id() == 7
     assert dag.get_next_timer() == UTC_MAX
@@ -419,16 +419,16 @@ def test_sinks_and_sources():
     assert dag.get_sinks() == {"sink": [sink]}
 
     source_1.set_stream([1, 2, 3])
-    dag.stabilize()
+    dag.execute()
     assert dag.get_sinks()["sink"][0].get_sink_value() == [1, 2, 3]
 
     source_1.set_stream([4, 5, 6])
-    dag.stabilize()
+    dag.execute()
     assert dag.get_sinks()["sink"][0].get_sink_value() == [4, 5, 6]
 
     source_1.set_stream([7])
     source_2.set_stream([8, 9])
-    dag.stabilize()
+    dag.execute()
     assert sink is dag.get_sinks()["sink"][0]
     assert sink.get_sink_value() == [7, 8, 9]
     # Nodes know about their inputs and their observer

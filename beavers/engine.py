@@ -534,7 +534,7 @@ class Dag:
         """Return the last cycle id."""
         return self._cycle_id
 
-    def stabilize(self, timestamp: typing.Optional[pd.Timestamp] = None):
+    def execute(self, timestamp: typing.Optional[pd.Timestamp] = None):
         """Run the dag for a given timestamp."""
         self._cycle_id += 1
         if timestamp is not None:
