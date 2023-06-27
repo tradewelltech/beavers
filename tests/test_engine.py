@@ -9,8 +9,8 @@ from beavers.engine import (
     UTC_EPOCH,
     UTC_MAX,
     Dag,
-    NodeInputs,
     TimerManager,
+    _NodeInputs,
     _unchanged_callback,
 )
 from tests.test_util import (
@@ -118,7 +118,7 @@ def test_scalar():
     dag.stabilize()
     assert z.get_value() == 42
 
-    with pytest.raises(TypeError, match="Only SourceStreamFunction can be set"):
+    with pytest.raises(TypeError, match="Only _SourceStreamFunction can be set"):
         z.set_stream(34)
 
 
@@ -456,27 +456,27 @@ def test_node_with_same_input_positional():
     dag = Dag()
     source_1 = dag.source_stream([], "source")
     node = dag.stream(lambda a, b: a + b, []).map(source_1, source_1)
-    assert node.inputs.positional == (source_1, source_1)
-    assert node.inputs.key_word == {}
-    assert node.inputs.nodes == (source_1,)
+    assert node._inputs.positional == (source_1, source_1)
+    assert node._inputs.key_word == {}
+    assert node._inputs.nodes == (source_1,)
 
 
 def test_node_with_same_input_key_word():
     dag = Dag()
     source_1 = dag.source_stream([], "source")
     node = dag.stream(lambda a, b: a + b, []).map(a=source_1, b=source_1)
-    assert node.inputs.positional == ()
-    assert node.inputs.key_word == {"a": source_1, "b": source_1}
-    assert node.inputs.nodes == (source_1,)
+    assert node._inputs.positional == ()
+    assert node._inputs.key_word == {"a": source_1, "b": source_1}
+    assert node._inputs.nodes == (source_1,)
 
 
 def test_node_with_same_input_mixed():
     dag = Dag()
     source_1 = dag.source_stream([], "source")
     node = dag.stream(lambda a, b: a + b, []).map(source_1, b=source_1)
-    assert node.inputs.positional == (source_1,)
-    assert node.inputs.key_word == {"b": source_1}
-    assert node.inputs.nodes == (source_1,)
+    assert node._inputs.positional == (source_1,)
+    assert node._inputs.key_word == {"b": source_1}
+    assert node._inputs.nodes == (source_1,)
 
 
 def test_wrong_usage():
@@ -507,7 +507,7 @@ def test_get_sink_value_on_other_node():
     dag = Dag()
     source = dag.source_stream([], "source")
     node = dag.stream(lambda x: x, []).map(source)
-    with pytest.raises(TypeError, match="Only SinkFunction can be read"):
+    with pytest.raises(TypeError, match="Only _SinkFunction can be read"):
         node.get_sink_value()
 
 
@@ -515,12 +515,12 @@ def test_node_inputs_kwargs_not_str():
     dag = Dag()
     source = dag.source_stream([], "source")
     with pytest.raises(TypeError, match="class 'int'"):
-        NodeInputs.create([], {1: source})
+        _NodeInputs.create([], {1: source})
 
 
 def test_node_inputs_not_node():
     with pytest.raises(TypeError, match="Inputs should be `Node`, got <class 'str'>"):
-        NodeInputs.create(["foo"], {})
+        _NodeInputs.create(["foo"], {})
 
 
 def test_node_not_function():

@@ -1,6 +1,14 @@
 default_language_version:
   python: python3.10
 repos:
+  - repo: https://github.com/pycqa/pydocstyle
+    rev: 6.3.0
+    hooks:
+      - id: pydocstyle
+        files: ^beavers/(engine|replay).py
+        additional_dependencies:
+          - tomli
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:
@@ -29,10 +37,3 @@ repos:
         additional_dependencies:
           - toml
         args: [--config=pyproject.toml]
-  - repo: https://github.com/pycqa/pydocstyle
-    rev: 6.3.0
-    hooks:
-      - id: pydocstyle
-        files: ^beavers/replay.py
-        additional_dependencies:
-          - tomli

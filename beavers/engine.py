@@ -1,4 +1,4 @@
-"""Module for building and representing dags and nodes"""
+"""Module for building and representing dags and nodes."""
 from __future__ import annotations
 
 import collections.abc
@@ -22,7 +22,7 @@ UTC_EPOCH = pd.to_datetime(0, utc=True)
 UTC_MAX = pd.Timestamp.max.tz_localize("UTC")
 
 
-class SourceStreamFunction(typing.Generic[T]):
+class _SourceStreamFunction(typing.Generic[T]):
     def __init__(self, empty: T, name: str):
         self._empty = empty
         self._name = name
@@ -37,7 +37,7 @@ class SourceStreamFunction(typing.Generic[T]):
         return result
 
 
-class SinkFunction(typing.Generic[T]):
+class _SinkFunction(typing.Generic[T]):
     def __init__(self, name: str):
         self._name = name
         self._value: typing.Optional[T] = None
@@ -50,8 +50,8 @@ class SinkFunction(typing.Generic[T]):
         return None
 
 
-class ValueCutOff(typing.Generic[T]):
-    def __init__(self, comparator: typing.Callable[[T, T], T] = operator.eq):
+class _ValueCutOff(typing.Generic[T]):
+    def __init__(self, comparator: typing.Callable[[T, T], bool] = operator.eq):
         self._value = _STATE_EMPTY
         self._comparator = comparator
 
@@ -64,23 +64,41 @@ class ValueCutOff(typing.Generic[T]):
 
 
 class TimerManager:
+    """
+    API for setting and accessing timer for a given `Node`.
+
+    - Timers are represented as `pd.Timestamp` with UTC timestamp.
+    - A timer of `UTC_MAX` means no timer.
+    - Each `TimerManager` is associated to only one `Node`.
+    - Each `Node` can only set one upcoming timer.
+
+    This class only stores data.
+    It is accessed by the framework to decide when the next timer.
+    """
+
     def __init__(self):
+        """Initialize with default values."""
         self._next_timer: pd.Timestamp = UTC_MAX
         self._just_triggered: bool = False
 
     def has_next_timer(self) -> bool:
+        """Return `True` if there is an upcoming timer."""
         return self._next_timer != UTC_MAX
 
     def just_triggered(self) -> bool:
+        """Return `True` if the timer triggered for the current cycle."""
         return self._just_triggered
 
     def get_next_timer(self) -> pd.Timestamp:
+        """Return the next triggered for this Node."""
         return self._next_timer
 
     def set_next_timer(self, timer: pd.Timestamp):
+        """Set the next timer, cancelling any existing upcoming timer."""
         self._next_timer = timer
 
     def clear_next_timer(self):
+        """Cancel the next timer."""
         self._next_timer = UTC_MAX
 
     def _flush(self, now: pd.Timestamp) -> bool:
@@ -93,7 +111,13 @@ class TimerManager:
             return False
 
 
-class TimerManagerFunction:
+class _TimerManagerFunction:
+    """
+    Function for `TimerManager` nodes.
+
+    Used by the framework to trigger timers.
+    """
+
     def __init__(self):
         self.timer_manager: TimerManager = TimerManager()
 
@@ -103,10 +127,16 @@ class TimerManagerFunction:
 
 @dataclasses.dataclass(frozen=True)
 class SilentUpdate(typing.Generic[T]):
+    """
+    Wrap a value to make the update silent.
+
+    A silent updates means the value changed but downstream nodes don't get notified.
+    """
+
     value: T
 
 
-class SourceState(typing.Generic[T]):
+class _SourceState(typing.Generic[T]):
     def __init__(self, value: T):
         self._value = value
 
@@ -118,7 +148,9 @@ class SourceState(typing.Generic[T]):
 
 
 @dataclasses.dataclass(frozen=True)
-class NodeInputs:
+class _NodeInputs:
+    """Internal representation of a node inputs."""
+
     positional: typing.Tuple[Node]
     key_word: typing.Dict[str, Node]
     nodes: typing.Tuple[Node]
@@ -126,7 +158,7 @@ class NodeInputs:
     @staticmethod
     def create(
         positional: typing.Sequence[Node], key_word: typing.Dict[str, Node]
-    ) -> "NodeInputs":
+    ) -> "_NodeInputs":
         all_nodes = []
         for node in positional:
             _check_input(node)
@@ -139,7 +171,7 @@ class NodeInputs:
             if node not in all_nodes:
                 all_nodes.append(node)
 
-        return NodeInputs(
+        return _NodeInputs(
             positional=tuple(positional),
             key_word=dict(key_word),
             nodes=tuple(all_nodes),
@@ -149,11 +181,13 @@ class NodeInputs:
         return self.nodes
 
 
-NO_INPUTS = NodeInputs.create([], {})
+NO_INPUTS = _NodeInputs.create([], {})
 
 
 @dataclasses.dataclass
-class RuntimeNodeData(typing.Generic[T]):
+class _RuntimeNodeData(typing.Generic[T]):
+    """Stores mutable information about a node state."""
+
     value: typing.Optional[T]
     notifications: int
     cycle_id: int
@@ -161,106 +195,127 @@ class RuntimeNodeData(typing.Generic[T]):
 
 @dataclasses.dataclass(frozen=True)
 class Node(typing.Generic[T]):
-    function: typing.Optional[typing.Callable[[...], T]]
-    inputs: NodeInputs = dataclasses.field(repr=False)
-    empty: typing.Any
-    observers: list[Node] = dataclasses.field(repr=False)
-    runtime_data: RuntimeNodeData
+    """
+    Represent an element in a `Dag`.
+
+    Stores all the runtime information about the node. This includes:
+
+     - the underlying processing function
+     - the node inputs (upstream nodes)
+     - the node observers (downstream nodes)
+     - the state of the node (last value, last update cycle id)
+
+    `Node` should only be used to add to the dag.
+    You shouldn't use them directly to read values (use sink for this)
+    """
+
+    _function: typing.Optional[typing.Callable[[...], T]]
+    _inputs: _NodeInputs = dataclasses.field(repr=False)
+    _empty: typing.Any
+    _observers: list[Node] = dataclasses.field(repr=False)
+    _runtime_data: _RuntimeNodeData
 
     @staticmethod
-    def create(
+    def _create(
         value: T = None,
         function: typing.Optional[typing.Callable[[...], T]] = None,
-        inputs: NodeInputs = NO_INPUTS,
+        inputs: _NodeInputs = NO_INPUTS,
         empty: typing.Any = _STATE_EMPTY,
         notifications: int = 1,
     ) -> Node:
         return Node(
-            function=function,
-            inputs=inputs,
-            empty=empty,
-            runtime_data=RuntimeNodeData(value, notifications, 0),
-            observers=[],
+            _function=function,
+            _inputs=inputs,
+            _empty=empty,
+            _runtime_data=_RuntimeNodeData(value, notifications, 0),
+            _observers=[],
         )
 
     def get_value(self) -> T:
-        return self.runtime_data.value
+        """Return the value of the output for the last update."""
+        return self._runtime_data.value
 
     def get_cycle_id(self) -> int:
-        return self.runtime_data.cycle_id
+        """Return id of the cycle at which this node last updated."""
+        return self._runtime_data.cycle_id
 
     def set_stream(self, value: T):
-        if not isinstance(self.function, SourceStreamFunction):
-            raise TypeError(f"Only {SourceStreamFunction.__name__} can be set")
-        self.function.set(value)
+        """Set the value of a `_SourceStream`."""
+        if not isinstance(self._function, _SourceStreamFunction):
+            raise TypeError(f"Only {_SourceStreamFunction.__name__} can be set")
+        self._function.set(value)
         self._stain()
 
     def get_sink_value(self) -> typing.Any:
-        if not isinstance(self.function, SinkFunction):
-            raise TypeError(f"Only {SinkFunction.__name__} can be read")
-        return self.function.get()
+        """Return the value of a `_SinkFunction`."""
+        if not isinstance(self._function, _SinkFunction):
+            raise TypeError(f"Only {_SinkFunction.__name__} can be read")
+        return self._function.get()
 
     def _stain(self):
-        self.runtime_data.notifications += 1
+        self._runtime_data.notifications += 1
 
     def _clean(self, cycle_id: int):
         if self._should_recalculate():
             self._recalculate(cycle_id)
         else:
             if self._is_stream():
-                self.runtime_data.value = self.empty
-                self.runtime_data.notifications = 0
+                self._runtime_data.value = self._empty
+                self._runtime_data.notifications = 0
 
     def _is_stream(self) -> bool:
-        return self.empty is not _STATE_EMPTY
+        return self._empty is not _STATE_EMPTY
 
     def _is_state(self) -> bool:
-        return self.empty is _STATE_EMPTY
+        return self._empty is _STATE_EMPTY
 
     def _should_recalculate(self) -> bool:
-        return self.runtime_data.notifications != 0
+        return self._runtime_data.notifications != 0
 
     def _recalculate(self, cycle_id: int):
         if not self._should_recalculate():
             raise RuntimeError("Calling recalculate on un-notified node")
 
-        positional_values = [node.get_value() for node in self.inputs.positional]
+        positional_values = [node.get_value() for node in self._inputs.positional]
         key_word_values = {
-            key: node.get_value() for key, node in self.inputs.key_word.items()
+            key: node.get_value() for key, node in self._inputs.key_word.items()
         }
-        updated_value = self.function(*positional_values, **key_word_values)
+        updated_value = self._function(*positional_values, **key_word_values)
         updated = self._process_updated_value(updated_value)
 
         if updated:
-            self.runtime_data.cycle_id = cycle_id
+            self._runtime_data.cycle_id = cycle_id
             self._notify_observers()
-        self.runtime_data.notifications = 0
+        self._runtime_data.notifications = 0
 
     def _process_updated_value(self, updated_value) -> bool:
         if self._is_state():
             if isinstance(updated_value, SilentUpdate):
-                self.runtime_data.value = updated_value.value
+                self._runtime_data.value = updated_value.value
                 return False
             if updated_value is not _STATE_UNCHANGED:
-                self.runtime_data.value = updated_value
+                self._runtime_data.value = updated_value
                 return True
             else:
                 return False
         else:
-            self.runtime_data.value = updated_value
+            self._runtime_data.value = updated_value
             return len(updated_value) > 0
 
     def _notify_observers(self):
-        for observer in self.observers:
+        for observer in self._observers:
             observer._stain()
 
 
 @dataclasses.dataclass(frozen=True)
 class NodePrototype(typing.Generic[T]):
-    _add_to_dag: typing.Callable[[NodeInputs], Node[T]]
+    """A `Node` that is yet to be added to the `Dag`."""
+
+    _add_to_dag: typing.Callable[[_NodeInputs], Node[T]]
 
     def map(self, *args: Node, **kwargs: Node) -> Node[T]:
-        return self._add_to_dag(NodeInputs.create(positional=args, key_word=kwargs))
+        """Add the prototype to the dag and connect it to the given inputs."""
+        return self._add_to_dag(_NodeInputs.create(positional=args, key_word=kwargs))
 
 
 def _unchanged_callback():
@@ -268,24 +323,32 @@ def _unchanged_callback():
 
 
 class Dag:
-    """
-    Main class used for building and executing dags
-    """
+    """Main class used for building and executing a dag."""
 
     def __init__(self):
+        """Create an empty `Dag`."""
         self._nodes: list[Node] = []
         self._sources: dict[str, Node] = {}
         self._sinks: dict[str, Node] = {}
         self._now_node: Node[pd.Timestamp] = self._add_node(
-            Node.create(UTC_EPOCH, SourceState(UTC_EPOCH))
+            Node._create(UTC_EPOCH, _SourceState(UTC_EPOCH))
         )
         self._silent_now_node: Node[pd.Timestamp] = self.silence(self._now_node)
         self._timer_manager_nodes: list[Node[TimerManager]] = []
         self._cycle_id: int = 0
 
     def const(self, value: T) -> Node[T]:
+        """
+        Add a `Node` of constant value to the `Dag`.
+
+        Parameters
+        ----------
+        value:
+            The value of the constant node. Should be Immutable.
+
+        """
         return self._add_node(
-            Node.create(
+            Node._create(
                 function=_unchanged_callback,
                 inputs=NO_INPUTS,
                 value=value,
@@ -293,17 +356,29 @@ class Dag:
             )
         )
 
-    def source_stream(self, empty: T, name: str = None) -> Node[T]:
+    def source_stream(self, empty: T, name: typing.Optional[str] = None) -> Node[T]:
+        """
+        Add a source stream `Node`.
+
+        Parameters
+        ----------
+        empty:
+            The value to which the stream reset to when there are no update.
+             Must implement `__len__` and be empty
+        name:
+            The name of the source
+
+        """
         _check_empty(empty)
         existing = self._sources.get(name) if name else None
         if existing is not None:
-            if existing.empty != empty:
+            if existing._empty != empty:
                 raise ValueError(f"Duplicate source: {name}")
             else:
                 return existing
         else:
             node = self._add_stream(
-                function=SourceStreamFunction(empty, name),
+                function=_SourceStreamFunction(empty, name),
                 empty=empty,
                 inputs=NO_INPUTS,
             )
@@ -312,38 +387,85 @@ class Dag:
             return node
 
     def stream(self, function: typing.Callable[P, T], empty: T) -> NodePrototype:
+        """
+        Add a stream `NodePrototype`.
+
+        Parameters
+        ----------
+        function:
+            The processing function of the `Node`.
+        empty:
+            The value to which the stream reset to when there are no update.
+             Must implement `__len__` and be empty
+
+        """
         _check_empty(empty)
         _check_function(function)
 
-        def add_to_dag(inputs: NodeInputs) -> Node:
+        def add_to_dag(inputs: _NodeInputs) -> Node:
             return self._add_stream(function, empty, inputs)
 
         return NodePrototype(add_to_dag)
 
     def state(self, function: typing.Callable[P, T]) -> NodePrototype[T]:
+        """
+        Add a state `NodePrototype`.
+
+        Parameters
+        ----------
+        function:
+            The processing function of the `Node`
+
+        """
         _check_function(function)
 
-        def add_to_dag(inputs: NodeInputs) -> Node:
+        def add_to_dag(inputs: _NodeInputs) -> Node:
             return self._add_state(function, inputs)
 
         return NodePrototype(add_to_dag)
 
     def sink(self, name: str, input_node: Node[T]) -> Node[None]:
+        """
+        Add a sink.
+
+        Parameters
+        ----------
+        name:
+            The name the sink
+        input_node:
+            The input node to be connected to the sink
+
+        """
         return self._add_node(
-            Node.create(
-                function=SinkFunction(name),
-                inputs=NodeInputs.create([input_node], {}),
+            Node._create(
+                function=_SinkFunction(name),
+                inputs=_NodeInputs.create([input_node], {}),
                 notifications=0,
             )
         )
 
     def now(self) -> Node[pd.Timestamp]:
+        """
+        Return a `Node` whose value is the current time.
+
+        The now `Node`:
+
+        - won't trigger update every time the time change.
+        - is unique for the `Dag`
+        """
         return self._silent_now_node
 
     def timer_manager(self) -> Node[TimerManager]:
-        function = TimerManagerFunction()
+        """
+        Create a new `TimerManager` to be connected to a `Node`.
+
+        Any node that must wake up on a timer should be connected
+         to its own `TimerManager`.
+
+        """
+        function = _TimerManagerFunction()
         node = self._add_node(
-            Node.create(
+            Node._create(
                 value=function.timer_manager,
                 function=function,
                 inputs=NO_INPUTS,
@@ -354,65 +476,83 @@ class Dag:
         return node
 
     def cutoff(
-        self, node: Node[T], comparator: typing.Callable[[T, T], T] = operator.eq
+        self, node: Node[T], comparator: typing.Callable[[T, T], bool] = operator.eq
     ) -> Node[T]:
+        """
+        Tame the update from a `Node`, given a "cutoff" policy.
+
+        Parameters
+        ----------
+        node:
+            The node whose value needs cutoff
+        comparator:
+            The policy for the cutoff.
+             When the `comparator` returns True, no updates get propagated.
+
+        """
         _check_input(node)
         if not callable(comparator):
             raise TypeError("`comparator` should be callable")
         return self._add_node(
-            Node.create(
-                function=ValueCutOff(comparator), inputs=NodeInputs.create([node], {})
+            Node._create(
+                function=_ValueCutOff(comparator), inputs=_NodeInputs.create([node], {})
             )
         )
 
     def silence(self, node: Node[T]) -> Node[T]:
+        """Silence a node, making it's update not trigger downstream."""
         _check_input(node)
         return self._add_node(
-            Node.create(
+            Node._create(
                 function=SilentUpdate,
-                inputs=NodeInputs.create([node], {}),
+                inputs=_NodeInputs.create([node], {}),
                 value=node.get_value(),
-                empty=node.empty,
+                empty=node._empty,
             )
         )
 
     def get_sources(self) -> dict[str, Node]:
+        """Return the source `Node`s."""
         return self._sources
 
     def get_sinks(self) -> dict[str, list[Node]]:
+        """Return the sink `Node`s."""
         results = defaultdict(list)
         for node in self._nodes:
-            if isinstance(node.function, SinkFunction):
-                results[node.function._name].append(node)
+            if isinstance(node._function, _SinkFunction):
+                results[node._function._name].append(node)
         return dict(results)
 
     def get_next_timer(self) -> pd.Timestamp:
+        """Return the nest timer that needs to be triggered."""
         next_timer = UTC_MAX
         for node in self._timer_manager_nodes:
             next_timer = min(next_timer, node.get_value().get_next_timer())
         return next_timer
 
-    def _add_stream(
-        self, function: typing.Callable[[...], T], empty: T, inputs: NodeInputs
-    ) -> Node[T]:
-        _check_function(function)
-        _check_empty(empty)
-        return self._add_node(
-            Node.create(value=empty, function=function, inputs=inputs, empty=empty)
-        )
-
     def get_cycle_id(self) -> int:
+        """Return the last cycle id."""
         return self._cycle_id
 
     def stabilize(self, timestamp: typing.Optional[pd.Timestamp] = None):
+        """Run the dag for a given timestamp."""
         self._cycle_id += 1
         if timestamp is not None:
-            self._now_node.function.set_value(timestamp)
+            self._now_node._function.set_value(timestamp)
             self._now_node._stain()
             self._flush_timers(timestamp)
 
         for node in self._nodes:
             node._clean(self._cycle_id)
+
+    def _add_stream(
+        self, function: typing.Callable[[...], T], empty: T, inputs: _NodeInputs
+    ) -> Node[T]:
+        _check_function(function)
+        _check_empty(empty)
+        return self._add_node(
+            Node._create(value=empty, function=function, inputs=inputs, empty=empty)
+        )
 
     def _flush_timers(self, now: pd.Timestamp) -> int:
         count = 0
@@ -425,20 +565,20 @@ class Dag:
         return count
 
     def _add_state(
-        self, function: typing.Callable[[...], T], inputs: NodeInputs
+        self, function: typing.Callable[[...], T], inputs: _NodeInputs
     ) -> Node[T]:
         _check_function(function)
-        return self._add_node(Node.create(function=function, inputs=inputs))
+        return self._add_node(Node._create(function=function, inputs=inputs))
 
     def _add_node(self, node: Node) -> Node:
-        if len(node.observers) > 0:
+        if len(node._observers) > 0:
             raise ValueError(f"New {Node.__name__} can't have observers")
         if node in self._nodes:
             raise ValueError(f"{Node.__name__} already in dag")
-        for input_node in node.inputs.input_nodes():
+        for input_node in node._inputs.input_nodes():
             if input_node not in self._nodes:
                 raise ValueError(f"Input {Node.__name__} not in dag")
-            input_node.observers.append(node)
+            input_node._observers.append(node)
         self._nodes.append(node)
         return node
 

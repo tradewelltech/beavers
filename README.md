@@ -31,7 +31,7 @@ in both realtime and batch jobs.
   * State: durable state derived from streams
 * Clear separation between the business logic and the IO. 
   So the same dag can be used in real time mode, replay mode or can be easily tested.
-
+* functional interface (no inheritance required)
 
 [pypi-image]: https://img.shields.io/pypi/v/beavers
 [pypi-url]: https://pypi.org/project/beavers/
