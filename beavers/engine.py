@@ -299,8 +299,13 @@ class Node(typing.Generic[T]):
             else:
                 return False
         else:
-            self._runtime_data.value = updated_value
-            return len(updated_value) > 0
+            if isinstance(updated_value, SilentUpdate):
+                # TODO: add test
+                self._runtime_data.value = updated_value.value
+                return False
+            else:
+                self._runtime_data.value = updated_value
+                return len(updated_value) > 0
 
     def _notify_observers(self):
         for observer in self._observers:
@@ -356,7 +361,9 @@ class Dag:
             )
         )
 
-    def source_stream(self, empty: T, name: typing.Optional[str] = None) -> Node[T]:
+    def source_stream(
+        self, empty: typing.Optional[T] = None, name: typing.Optional[str] = None
+    ) -> Node[T]:
         """
         Add a source stream `Node`.
 
@@ -369,7 +376,7 @@ class Dag:
             The name of the source
 
         """
-        _check_empty(empty)
+        empty = _check_empty(empty)
         existing = self._sources.get(name) if name else None
         if existing is not None:
             if existing._empty != empty:
@@ -386,7 +393,9 @@ class Dag:
                 self._sources[name] = node
             return node
 
-    def stream(self, function: typing.Callable[P, T], empty: T) -> NodePrototype:
+    def stream(
+        self, function: typing.Callable[P, T], empty: typing.Optional[T] = None
+    ) -> NodePrototype:
         """
         Add a stream `NodePrototype`.
 
@@ -399,7 +408,7 @@ class Dag:
              Must implement `__len__` and be empty
 
         """
-        _check_empty(empty)
+        empty = _check_empty(empty)
         _check_function(function)
 
         def add_to_dag(inputs: _NodeInputs) -> Node:
@@ -549,7 +558,7 @@ class Dag:
         self, function: typing.Callable[[...], T], empty: T, inputs: _NodeInputs
     ) -> Node[T]:
         _check_function(function)
-        _check_empty(empty)
+        empty = _check_empty(empty)
         return self._add_node(
             Node._create(value=empty, function=function, inputs=inputs, empty=empty)
         )
@@ -584,7 +593,9 @@ class Dag:
 
 
 def _check_empty(empty: T) -> T:
-    if not isinstance(empty, collections.abc.Sized):
+    if empty is None:
+        return []
+    elif not isinstance(empty, collections.abc.Sized):
         raise TypeError("`empty` should implement `__len__`")
     elif len(empty) != 0:
         raise TypeError("`len(empty)` should be 0")

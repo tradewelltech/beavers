@@ -122,6 +122,17 @@ def test_scalar():
         z.set_stream(34)
 
 
+def test_stream_no_empty():
+    dag = Dag()
+    source1 = dag.source_stream()
+    assert source1.get_value() == []
+    assert source1._empty == []
+
+    stream = dag.stream(lambda x: x).map(source1)
+    assert stream.get_value() == []
+    assert stream._empty == []
+
+
 def test_stream_to_state():
     dag = Dag()
 
@@ -482,7 +493,10 @@ def test_node_with_same_input_mixed():
 def test_wrong_usage():
     dag = Dag()
     with pytest.raises(TypeError, match="`empty` should implement `__len__`"):
-        dag.stream(lambda x: x, None)
+        dag.stream(lambda x: x, 123)
+
+    with pytest.raises(TypeError, match="`empty` should implement `__len__`"):
+        dag.stream(lambda x: x, 0)
 
 
 def test_add_existing_node():
