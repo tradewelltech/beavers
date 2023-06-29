@@ -1,3 +1,6 @@
+# ruff: noqa: E402
+# isort: skip_file
+
 # --8<-- [start:now_node]
 import pandas as pd
 
@@ -27,7 +30,6 @@ assert delay.get_value() == [
 ]
 
 # --8<-- [end:now_node]
-
 
 # --8<-- [start:timer_manager]
 from beavers import TimerManager

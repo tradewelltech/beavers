@@ -1,3 +1,5 @@
+# isort: skip_file
+
 # --8<-- [start:source_stream]
 from beavers import Dag
 
