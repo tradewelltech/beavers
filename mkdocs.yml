@@ -17,4 +17,8 @@ plugins:
             show_source: false
 
 markdown_extensions:
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
   - pymdownx.snippets:
+  - pymdownx.emoji
+  - pymdownx.highlight

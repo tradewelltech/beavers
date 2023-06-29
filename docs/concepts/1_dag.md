@@ -1,5 +1,7 @@
 
-# Stream Source
+# Dag
+
+## Stream Source
 
 A stream source is a node whose value can be set externally.
 
@@ -27,7 +29,7 @@ A source stream can be given a name, so they can be retrieved (and their value s
 --8<-- "examples/dag_concepts.py:source_stream_name"
 ```
 
-# Stream Node
+## Stream Node
 
 A stream node uses the output of other nodes to calculate its updated value. 
 
@@ -56,21 +58,21 @@ Or a callable:
 --8<-- "examples/dag_concepts.py:stream_node_callable"
 ```
 
-# State Node
+## State Node
 
 A state node retain its value from one dag execution to the next, even if it didn't update:
 ```python
 --8<-- "examples/dag_concepts.py:state_node"
 ```
 
-# Const Node
+## Const Node
 
 A const node is a node whose value doesn't change.
 ```python
 --8<-- "examples/dag_concepts.py:const_node"
 ```
 
-# Connecting Nodes (aka `map`)
+## Connecting Nodes (aka `map`)
 
 Nodes are connected by calling the `map` function. 
 Stream node can be connected to state node, and vice versa.
@@ -90,7 +92,7 @@ Or key word arguments:
 --8<-- "examples/dag_concepts.py:map_key_word"
 ```
 
-# Update Propagation
+## Update Propagation
 
 - Nodes are notified if any of their input node was updated during the current execution cycle
 ```python
@@ -108,9 +110,3 @@ Or key word arguments:
 ```python
 --8<-- "examples/dag_concepts.py:propagate_empty"
 ```
-
-- [ ] add emoji plugin
-- [ ] get navigation to work
-- [ ] add stream vs state
-- [ ] add replay section
-- [ ] add pyarrow section
