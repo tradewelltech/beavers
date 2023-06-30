@@ -320,7 +320,7 @@ def test_cutoff_not_callable():
         dag.cutoff(x, comparator="not a callable")
 
 
-def test_silence():
+def test_silence_state():
     dag = Dag()
     x_source = dag.source_stream([], "x")
     x = dag.state(GetLatest(1)).map(x_source)
@@ -339,6 +339,18 @@ def test_silence():
     assert x_silent.get_value() == "b"
     assert x.get_cycle_id() == dag.get_cycle_id()
     assert x_silent.get_cycle_id() == 0
+
+
+def test_silence_stream():
+    dag = Dag()
+    x_source = dag.source_stream([], "x")
+    x_silent = dag.silence(x_source)
+
+    x_source.set_stream(["a", "b"])
+    dag.execute()
+    assert x_silent.get_cycle_id() == 0
+    assert x_source.get_cycle_id() == 1
+    assert x_silent.get_value() == ["a", "b"]
 
 
 def test_now():

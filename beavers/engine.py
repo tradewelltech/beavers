@@ -300,7 +300,6 @@ class Node(typing.Generic[T]):
                 return False
         else:
             if isinstance(updated_value, SilentUpdate):
-                # TODO: add test
                 self._runtime_data.value = updated_value.value
                 return False
             else:
