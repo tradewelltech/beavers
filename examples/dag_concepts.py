@@ -56,7 +56,7 @@ assert stream_node.get_value() == []
 
 # --8<-- [start:stream_node_empty]
 set_stream_node = dag.stream(set, empty=set()).map(source_stream)
-source_stream.set_stream([1, 2, 3])
+source_stream.set_stream([1, 2, 3, 1, 2, 3])
 dag.execute()
 assert set_stream_node.get_value() == {1, 2, 3}
 dag.execute()
