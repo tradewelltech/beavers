@@ -53,14 +53,14 @@ The function provided to the node can be any callable, like a lambda:
 --8<-- "examples/dag_concepts.py:stream_node_lambda"
 ```
 
-Or a callable:
+Or a class defining `__call__`:
 ```python
 --8<-- "examples/dag_concepts.py:stream_node_callable"
 ```
 
 ## State Node
 
-A state node retain its value from one dag execution to the next, even if it didn't update:
+A state node retains its value from one dag execution to the next, even if it didn't update:
 ```python
 --8<-- "examples/dag_concepts.py:state_node"
 ```
@@ -75,8 +75,7 @@ A const node is a node whose value doesn't change.
 ## Connecting Nodes (aka `map`)
 
 Nodes are connected by calling the `map` function. 
-Stream node can be connected to state node, and vice versa.
-Same thing applies to const nodes.
+Stream nodes can be connected to state nodes, stream nodes or const nodes, and vice versa.
 
 > :warning: The `map` function doesn't execute the underlying node. 
 > Instead it adds a node to the dag
@@ -98,7 +97,7 @@ Or key word arguments:
 ```python
 --8<-- "examples/dag_concepts.py:propagate_any"
 ```
-- You can check if a node updated by looking at it "cycle_id"
+- You can check if a node updated by looking at its `cycle_id`
 ```python
 --8<-- "examples/dag_concepts.py:propagate_cycle_id"
 ```

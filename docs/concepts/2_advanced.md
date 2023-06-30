@@ -15,7 +15,7 @@ Its value gets updated silently.
 
 ## TimerManager
 
-To be notified when a time passes, nodes can subscribe to a `TimerManager` node.
+To be notified when time passes, nodes can subscribe to a `TimerManager` node.
 
 ```python
 --8<-- "examples/advanced_concepts.py:timer_manager"
@@ -23,7 +23,7 @@ To be notified when a time passes, nodes can subscribe to a `TimerManager` node.
 
 ## Silent update
 
-Some node myy update too often, or their updates may not be relevant to other nodes.
+Some node may update too often, or their updates may not be relevant to other nodes.
 In this case it's possible to silence them:
 
 ```python
