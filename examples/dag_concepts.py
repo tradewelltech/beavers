@@ -56,7 +56,7 @@ assert stream_node.get_value() == []
 
 # --8<-- [start:stream_node_empty]
 set_stream_node = dag.stream(set, empty=set()).map(source_stream)
-source_stream.set_stream([1, 2, 3])
+source_stream.set_stream([1, 2, 3, 1, 2, 3])
 dag.execute()
 assert set_stream_node.get_value() == {1, 2, 3}
 dag.execute()
@@ -124,7 +124,7 @@ assert positional_stream.get_value() == [1, 2, 3]
 
 # --8<-- [start:map_key_word]
 key_word = dag.stream(lambda x, y: x + y).map(x=source_stream, y=to_append)
-# --8<-- [end:map_positional]
+# --8<-- [end:map_key_word]
 
 # --8<-- [start:propagate_any]
 source_1 = dag.source_stream()
@@ -133,14 +133,14 @@ node = dag.stream(lambda x, y: x + y).map(source_1, source_2)
 
 source_1.set_stream([1, 2, 3])
 dag.execute()
-assert node.get_value() == [1, 2, 3]
+assert node.get_value() == [1, 2, 3]  # source_1 updated
 
 source_2.set_stream([4, 5, 6])
 dag.execute()
-assert node.get_value() == [4, 5, 6]
+assert node.get_value() == [4, 5, 6]  # source_2 updated
 
 dag.execute()
-assert node.get_value() == []
+assert node.get_value() == []  # no updates, reset to empty
 # --8<-- [end:propagate_any]
 
 # --8<-- [start:propagate_cycle_id]
@@ -161,7 +161,7 @@ source_2.set_stream([4, 5, 6])
 dag.execute()
 assert node.get_value() == [1, 2, 3, 4, 5, 6]
 assert node.get_cycle_id() == dag.get_cycle_id()
-# --8<-- [end:propagate_cycle_id]
+# --8<-- [end:propagate_both]
 
 
 # --8<-- [start:propagate_empty]

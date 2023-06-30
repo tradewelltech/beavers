@@ -1,12 +1,11 @@
 # ruff: noqa: E402
 # isort: skip_file
-
-# --8<-- [start:now_node]
 import pandas as pd
 
 from beavers import Dag
 
 
+# --8<-- [start:now_node]
 def get_delay(timestamps: list[pd.Timestamp], now: pd.Timestamp) -> list[pd.Timedelta]:
     return [now - timestamp for timestamp in timestamps]
 
@@ -75,7 +74,9 @@ assert both.get_cycle_id() == dag.get_cycle_id()
 
 source_1.set_stream([1, 2, 3])
 dag.execute()
-assert both.get_value() == []  # No update because source_1 is silent
-assert both.get_cycle_id() == dag.get_cycle_id() - 1
+assert both.get_value() == []
+assert (
+    both.get_cycle_id() == dag.get_cycle_id() - 1
+)  # No update because source_1 is silent
 
 # --8<-- [end:silence]
