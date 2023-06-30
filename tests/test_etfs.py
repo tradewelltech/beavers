@@ -22,7 +22,7 @@ def test_run_dag():
             "etf_composition",
             [etfs.EtfComposition(timestamp_0, "TECH", {"AAPL": 1.0, "GOOG": 1.5})],
         )
-        .run(timestamp_0)
+        .execute(timestamp_0)
         .assert_sink_list("etf_price", [etfs.PriceRecord(timestamp_0, "TECH", 144.0)])
     )
 
@@ -35,7 +35,7 @@ def test_run_dag():
                 etfs.PriceRecord(timestamp_1, "AAPL", 200.0),
             ],
         )
-        .run(timestamp_1)
+        .execute(timestamp_1)
         .assert_sink_list("etf_price", [etfs.PriceRecord(timestamp_1, "TECH", 152.0)])
     )
 
@@ -48,7 +48,7 @@ def test_run_dag():
                 etfs.PriceRecord(timestamp_2, "MSFT", 330.0),
             ],
         )
-        .run(timestamp_2)
+        .execute(timestamp_2)
         .assert_sink_not_updated("etf_price")
     )
 
@@ -59,7 +59,7 @@ def test_run_dag():
             "etf_composition",
             [etfs.EtfComposition(timestamp_3, "SOFT", {"MSFT": 0.5, "GOOG": 1.0})],
         )
-        .run(timestamp_3)
+        .execute(timestamp_3)
         .assert_sink_list("etf_price", [etfs.PriceRecord(timestamp_3, "SOFT", 190.0)])
     )
 
@@ -74,6 +74,6 @@ def test_run_dag():
                 )
             ],
         )
-        .run(timestamp_4)
+        .execute(timestamp_4)
         .assert_sink_list("etf_price", [etfs.PriceRecord(timestamp_4, "SOFT", None)])
     )

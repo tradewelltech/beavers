@@ -1,4 +1,6 @@
 markdown-include
 mkdocs
 mkdocs-material
+mkdocs-material-extensions
 mkdocstrings[python]
+pymdown-extensions

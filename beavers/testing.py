@@ -22,8 +22,8 @@ class DagTestBench:
         source.set_stream(source_data)
         return self
 
-    def run(self, now: Optional[pd.Timestamp] = None) -> "DagTestBench":
-        self.dag.stabilize(now)
+    def execute(self, now: Optional[pd.Timestamp] = None) -> "DagTestBench":
+        self.dag.execute(now)
         return self
 
     def assert_sink_list(

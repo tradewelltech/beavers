@@ -38,6 +38,13 @@ pytest = ">=7.2.0"
 mkdocs-material = ">=9.0.3"
 mkdocstrings = { version = ">=0.21.2", extras = ['python'] }
 
+[tool.poetry.group.docs.dependencies]
+markdown-include = "*"
+mkdocs = "*"
+mkdocs-material = "*"
+mkdocs-material-extensions = "*"
+mkdocstrings = {version = "*", extras = ['python']}
+pymdown-extensions = "*"
 
 
 [build-system]
