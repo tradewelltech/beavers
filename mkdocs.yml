@@ -19,7 +19,7 @@ theme:
   palette:
     scheme: slate
   logo: static/icons/beavers/logo.svg
-  favicon: static/icons/beavers/icon.svg
+  favicon: static/icons/beavers/icon.png
 
 plugins:
   - search
