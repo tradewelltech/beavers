@@ -23,6 +23,7 @@ keywords = ["apache-arrow", "streaming", "data"]
 
 [tool.poetry.dependencies]
 pandas = ">1.4.0"
+confluent_kafka = ">=2.1.1"
 python = ">=3.10,<3.12"
 
 [tool.poetry.group.dev.dependencies]
@@ -37,6 +38,7 @@ pylint = ">=2.15.0"
 pytest = ">=7.2.0"
 mkdocs-material = ">=9.0.3"
 mkdocstrings = { version = ">=0.21.2", extras = ['python'] }
+mock = "*"
 
 [tool.poetry.group.docs.dependencies]
 markdown-include = "*"
