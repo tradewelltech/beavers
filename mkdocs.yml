@@ -1,11 +1,25 @@
 site_name: Beavers
 site_url: https://beavers.readthedocs.io/en/latest/
-
+repo_url: https://github.com/tradewelltech/beavers
 theme:
   name: material
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - content.code.annotate
+    - content.tabs.link
+    - content.code.copy
+    - header.autohide
+    - navigation.indexes
+    - navigation.instant
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
   palette:
     scheme: slate
-
+  logo: static/icons/beavers/logo.svg
+  favicon: static/icons/beavers/icon.png
 
 plugins:
   - search
@@ -22,3 +36,5 @@ markdown_extensions:
   - pymdownx.snippets:
   - pymdownx.emoji
   - pymdownx.highlight
+extra:
+  project_name: "beavers"
