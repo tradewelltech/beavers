@@ -1,3 +1,4 @@
+"""Module for consuming data in real time from kafka."""
 import contextlib
 import dataclasses
 import logging
@@ -19,27 +20,31 @@ KAFKA_EOF_CODE = -191
 
 
 class KafkaMessageDeserializer(Protocol[T]):
-    """Interface for converting incoming kafka messages to custom data"""
+    """Interface for converting incoming kafka messages to custom data."""
 
     def __call__(self, messages: list[confluent_kafka.Message]) -> T:
-        """Convert batch of messages to data"""
+        """Convert batch of messages to data."""
 
 
 @dataclasses.dataclass(frozen=True)
 class KafkaProducerMessage:
+    """Data for a message that needs to be produced."""
+
     topic: str
     key: AnyStr
     value: AnyStr
 
 
 class KafkaMessageSerializer(Protocol[T]):
-    """Interface for converting custom data to outgoing kafka messages"""
+    """Interface for converting custom data to outgoing kafka messages."""
 
     def __call__(self, value: T) -> list[KafkaProducerMessage]:
-        """Convert batch of custom data to `KafkaProducerMessage`"""
+        """Convert batch of custom data to `KafkaProducerMessage`."""
 
 
 class OffsetPolicy(Enum):
+    """Type defining kafka historic replay policy."""
+
     LATEST = 1
     EARLIEST = 2
     START_OF_DAY = 3
@@ -50,6 +55,12 @@ class OffsetPolicy(Enum):
 
 @dataclasses.dataclass(frozen=True)
 class SourceTopic(Generic[T]):
+    """
+    Configuration of a source topic.
+
+    Do not use the constructor directly use `from_xxx` instead.
+    """
+
     name: str
     message_deserializer: KafkaMessageDeserializer[T]
     offset_policy: OffsetPolicy
@@ -158,6 +169,8 @@ class _RuntimeSourceTopic(Generic[T]):
 
 @dataclasses.dataclass
 class ProducerMetrics:
+    """Metrics for kafka produced data."""
+
     produced_count: int = 0
     produced_size: int = 0
     produced_error_count: int = 0
@@ -217,6 +230,8 @@ class _PartitionInfo:
 
 @dataclasses.dataclass
 class ConsumerMetrics:
+    """Metrics for consumed data."""
+
     consumed_message_size: int = 0
     consumed_message_count: int = 0
     paused_partitions: int = 0
@@ -386,6 +401,8 @@ class _RuntimeSinkTopic:
 
 @dataclasses.dataclass
 class ExecutionMetrics:
+    """Metrics for the execution of a dag."""
+
     serialization_ns: int = 0
     serialization_count: int = 0
     execution_ns: int = 0
@@ -411,6 +428,8 @@ class ExecutionMetrics:
 
 
 class KafkaDriver:
+    """Control the execution of a dag, using data from kafka."""
+
     def __init__(
         self,
         dag: Dag,
@@ -419,6 +438,7 @@ class KafkaDriver:
         consumer_manager: _ConsumerManager,
         producer_manager: _ProducerManager,
     ):
+        """Do not use directly, use `create` instead."""
         self._dag = dag
         self._source_topics: dict[str, _RuntimeSourceTopic] = {
             runtime_source_topic._topic_name: runtime_source_topic
