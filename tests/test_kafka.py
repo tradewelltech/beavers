@@ -293,6 +293,65 @@ def test_consumer_manager_priming():
     assert consumer_manager._get_priming_watermark() is None
 
 
+def test_consumer_manager_update_partition_info():
+    topic_partition = TopicPartition("topic-a", 0, offset=100)
+    partitions = [topic_partition]
+    cutoff = pd.to_datetime("2022-10-19 01:00:00", utc=True)
+
+    mock_consumer = MockConsumer()
+    consumer_manager = _ConsumerManager(
+        cutoff=cutoff,
+        partitions=partitions,
+        consumer=mock_consumer,
+        batch_size=100,
+        max_held_messages=200,
+    )
+    assert consumer_manager._low_water_mark_ns == 0
+
+    consumer_manager._update_partition_info(
+        [
+            mock_kafka_message(
+                topic=topic_partition.topic,
+                partition=topic_partition.partition,
+                value=b"HELLO",
+                timestamp=cutoff,
+            )
+        ]
+    )
+
+    assert consumer_manager._low_water_mark_ns == cutoff.value
+
+    with mock.patch(
+        "pandas.Timestamp.utcnow",
+        return_value=cutoff + pd.to_timedelta("20s"),
+    ):
+        consumer_manager._update_partition_info(
+            [
+                mock_kafka_message(
+                    topic=topic_partition.topic,
+                    partition=topic_partition.partition,
+                    value=b"EOF",
+                    error=KafkaError(KAFKA_EOF_CODE),
+                )
+            ]
+        )
+        assert (
+            consumer_manager._low_water_mark_ns
+            == (cutoff + pd.to_timedelta("20s")).value
+        )
+
+    consumer_manager._update_partition_info(
+        [
+            mock_kafka_message(
+                topic=topic_partition.topic,
+                partition=topic_partition.partition,
+                value=b"123",
+                error=KafkaError(123),
+            )
+        ]
+    )
+
+
 def test_consumer_manager_batching():
     tp1 = TopicPartition("topic-a", 0, offset=0)
     tp2 = TopicPartition("topic-a", 1, offset=0)
