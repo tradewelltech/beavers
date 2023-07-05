@@ -11,10 +11,8 @@
 [![Code style: black][codestyle-image]][codestyle-url]
 
 # Beavers
-_____
 
 **Beavers** is a python library for stream processing, optimized for analytics. 
-
 
 It is used at [Tradewell Technologies](https://www.tradewelltech.co/), 
 to calculate analytics and serve model predictions,
@@ -27,8 +25,8 @@ in both realtime and batch jobs.
 * Optimized for analytics, it uses micro-batching (instead of processing records one by one)
 * Similar to [incremental](https://github.com/janestreet/incremental), it  updates nodes in a dag incrementally
 * Taking inspiration from [kafka streams](https://www.confluent.io/blog/kafka-streams-tables-part-1-event-streaming/), there are two types of nodes in the dag:
-  * Stream: ephemeral micro-batches of events (cleared after every cycle)
-  * State: durable state derived from streams
+  * **Stream:** ephemeral micro-batches of events (cleared after every cycle)
+  * **State:** durable state derived from streams
 * Clear separation between the business logic and the IO. 
   So the same dag can be used in real time mode, replay mode or can be easily tested.
 * functional interface (no inheritance required)
