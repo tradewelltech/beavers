@@ -179,18 +179,19 @@ class ProducerMetrics:
 
 
 class _ProducerManager:
-    def __init__(
-        self,
-        producer_config: dict[str, Any],
-    ):
-        self._producer = confluent_kafka.Producer(producer_config)
-        self._errors = 0
+    def __init__(self, producer: confluent_kafka.Producer):
+        self._producer: confluent_kafka.Producer = producer
+        self._errors: int = 0
         self._metrics: ProducerMetrics = ProducerMetrics()
+
+    @staticmethod
+    def create(producer_config: dict[str, Any]) -> "_ProducerManager":
+        return _ProducerManager(confluent_kafka.Producer(producer_config))
 
     def poll(self):
         self._producer.poll(0.0)
 
-    def produce_one(self, topic: str, key: AnyStr, value: bytes) -> bool:
+    def produce_one(self, topic: str, key: AnyStr, value: AnyStr) -> bool:
         try:
             self._producer.produce(
                 topic=topic, key=key, value=value, on_delivery=self.on_delivery
@@ -201,8 +202,9 @@ class _ProducerManager:
         except Exception as err:
             if self._errors == 0:
                 logger.error("Error producing message on %s", topic, exc_info=err)
-                self._errors += 1
-                return False
+            self._metrics.produced_error_count += 1
+            self._errors += 1
+            return False
 
     def on_delivery(self, err, msg: confluent_kafka.Message):
         if err:
@@ -483,7 +485,7 @@ class KafkaDriver:
             _RuntimeSinkTopic(dag_sinks[key], value)
             for key, value in sink_topics.items()
         ]
-        producer_manager = _ProducerManager(producer_config)
+        producer_manager = _ProducerManager.create(producer_config)
         return KafkaDriver(
             dag=dag,
             runtime_source_topics=runtime_source_topics,
@@ -491,10 +493,6 @@ class KafkaDriver:
             consumer_manager=consumer_manager,
             producer_manager=producer_manager,
         )
-
-    def run(self):
-        while True:
-            self.run_cycle()
 
     def flush_metrics(self) -> ExecutionMetrics:
         results = self._metrics
