@@ -18,6 +18,7 @@ theme:
     - search.suggest
   palette:
     scheme: slate
+    accent: green
   logo: static/icons/beavers/logo.svg
   favicon: static/icons/beavers/icon.png
 
