@@ -24,9 +24,3 @@ in both realtime and batch jobs.
 [2]: https://www.tradewelltech.co/
 [3]: https://github.com/janestreet/incremental
 [4]: https://www.confluent.io/blog/kafka-streams-tables-part-1-event-streaming/
-
-
-[1]: https://github.com/tradewelltech/beavers
-[2]: https://www.tradewelltech.co/
-[3]: https://github.com/janestreet/incremental
-[4]: https://www.confluent.io/blog/kafka-streams-tables-part-1-event-streaming/
