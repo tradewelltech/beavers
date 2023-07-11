@@ -1,17 +1,20 @@
 
-# Dag
+# DAG
+
+At its core, `beavers` executes a Directed Acyclic Graph (DAG), where each node is a python function.   
+This section discuss the different type of nodes in the DAG.
 
 ## Stream Source
 
 A stream source is a node whose value can be set externally.
 
-When `Dag.execute` is called, the updated value is propagated in the dag
+When `Dag.execute` is called, the updated value is propagated in the DAG
 
 ```python
 --8<-- "examples/dag_concepts.py:source_stream"
 ```
 
-If the dag is executed again, the value of the source stream will be reset to its empty value.
+If the DAG is executed again, the value of the source stream will be reset to its empty value.
 
 ```python
 --8<-- "examples/dag_concepts.py:source_stream_again"
@@ -37,7 +40,7 @@ A stream node uses the output of other nodes to calculate its updated value.
 --8<-- "examples/dag_concepts.py:stream_node"
 ```
 
-If the dag is executed again, the value of the stream node will be reset to its empty value.
+If the DAG is executed again, the value of the stream node will be reset to its empty value.
 
 ```python
 --8<-- "examples/dag_concepts.py:stream_node_again"
@@ -60,7 +63,7 @@ Or a class defining `__call__`:
 
 ## State Node
 
-A state node retains its value from one dag execution to the next, even if it didn't update:
+A state node retains its value from one DAG execution to the next, even if it didn't update:
 ```python
 --8<-- "examples/dag_concepts.py:state_node"
 ```
@@ -78,7 +81,7 @@ Nodes are connected by calling the `map` function.
 Stream nodes can be connected to state nodes, stream nodes or const nodes, and vice versa.
 
 > :warning: The `map` function doesn't execute the underlying node. 
-> Instead it adds a node to the dag
+> Instead it adds a node to the DAG
 
 The map function can use positional arguments:
 
@@ -89,23 +92,4 @@ Or key word arguments:
 
 ```python
 --8<-- "examples/dag_concepts.py:map_key_word"
-```
-
-## Update Propagation
-
-- Nodes are notified if any of their input node was updated during the current execution cycle
-```python
---8<-- "examples/dag_concepts.py:propagate_any"
-```
-- You can check if a node updated by looking at its `cycle_id`
-```python
---8<-- "examples/dag_concepts.py:propagate_cycle_id"
-```
-- If several inputs of a node get updated during the same cycle, the node will be executed once (and not once per input)
-```python
---8<-- "examples/dag_concepts.py:propagate_both"
-```
-- Stream nodes (and sources) are not considered updated if their output is empty
-```python
---8<-- "examples/dag_concepts.py:propagate_empty"
 ```

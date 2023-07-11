@@ -4,13 +4,70 @@ import pandas as pd
 
 from beavers import Dag
 
+dag = Dag()
+
+# --8<-- [start:propagate_any]
+source_1 = dag.source_stream()
+source_2 = dag.source_stream()
+node = dag.stream(lambda x, y: x + y).map(source_1, source_2)
+
+source_1.set_stream([1, 2, 3])
+dag.execute()
+assert node.get_value() == [1, 2, 3]  # source_1 updated
+
+source_2.set_stream([4, 5, 6])
+dag.execute()
+assert node.get_value() == [4, 5, 6]  # source_2 updated
+
+dag.execute()
+assert node.get_value() == []  # no updates, reset to empty
+# --8<-- [end:propagate_any]
+
+# --8<-- [start:propagate_cycle_id]
+source_1.set_stream([1, 2, 3])
+dag.execute()
+assert node.get_value() == [1, 2, 3]
+assert node.get_cycle_id() == dag.get_cycle_id()
+
+dag.execute()
+assert node.get_value() == []
+assert node.get_cycle_id() == dag.get_cycle_id() - 1
+# --8<-- [end:propagate_cycle_id]
+
+
+# --8<-- [start:propagate_both]
+source_1.set_stream([1, 2, 3])
+source_2.set_stream([4, 5, 6])
+dag.execute()
+assert node.get_value() == [1, 2, 3, 4, 5, 6]
+assert node.get_cycle_id() == dag.get_cycle_id()
+# --8<-- [end:propagate_both]
+
+
+# --8<-- [start:propagate_empty]
+def even_only(values: list[int]) -> list[int]:
+    return [v for v in values if (v % 2) == 0]
+
+
+even = dag.stream(even_only).map(source_1)
+
+source_1.set_stream([1, 2, 3])
+dag.execute()
+assert even.get_value() == [2]
+assert even.get_cycle_id() == dag.get_cycle_id()
+
+source_1.set_stream([1, 3])
+dag.execute()
+assert even.get_value() == []
+assert even.get_cycle_id() == dag.get_cycle_id() - 1
+# --8<-- [end:propagate_empty]
+
 
 # --8<-- [start:now_node]
 def get_delay(timestamps: list[pd.Timestamp], now: pd.Timestamp) -> list[pd.Timedelta]:
     return [now - timestamp for timestamp in timestamps]
 
 
-dag = Dag()
 timestamp_stream = dag.source_stream()
 delay = dag.stream(get_delay).map(timestamp_stream, dag.now())
 
@@ -80,3 +137,63 @@ assert (
 )  # No update because source_1 is silent
 
 # --8<-- [end:silence]
+
+
+# --8<-- [start:cutoff]
+class GetMax:
+    def __init__(self):
+        self._max = 0.0
+
+    def __call__(self, values: list[float]) -> float:
+        self._max = max(self._max, *values)
+        return self._max
+
+
+source = dag.source_stream()
+get_max = dag.state(GetMax()).map(source)
+get_max_cutoff = dag.cutoff(get_max)
+
+source.set_stream([1.0, 2.0])
+dag.execute()
+assert get_max.get_value() == 2.0
+assert get_max.get_cycle_id() == dag.get_cycle_id()
+assert get_max_cutoff.get_cycle_id() == dag.get_cycle_id()
+
+source.set_stream([1.0])
+dag.execute()
+assert get_max.get_value() == 2.0
+assert get_max.get_cycle_id() == dag.get_cycle_id()
+assert get_max_cutoff.get_cycle_id() == dag.get_cycle_id() - 1
+
+source.set_stream([3.0])
+dag.execute()
+assert get_max.get_value() == 3.0
+assert get_max.get_cycle_id() == dag.get_cycle_id()
+assert get_max_cutoff.get_cycle_id() == dag.get_cycle_id()
+# --8<-- [end:cutoff]
+
+# --8<-- [start:cutoff_custom]
+get_max_cutoff_custom = dag.cutoff(get_max, lambda x, y: abs(x - y) < 0.1)
+
+source.set_stream([4.0])
+dag.execute()
+assert get_max.get_value() == 4.0
+assert get_max.get_cycle_id() == dag.get_cycle_id()
+assert get_max_cutoff_custom.get_cycle_id() == dag.get_cycle_id()
+
+
+source.set_stream([4.05])
+dag.execute()
+assert get_max.get_value() == 4.05
+assert get_max.get_cycle_id() == dag.get_cycle_id()
+assert get_max_cutoff_custom.get_value() == 4.0
+assert get_max_cutoff_custom.get_cycle_id() == dag.get_cycle_id() - 1
+
+
+source.set_stream([4.11])
+dag.execute()
+assert get_max.get_value() == 4.11
+assert get_max.get_cycle_id() == dag.get_cycle_id()
+assert get_max_cutoff_custom.get_value() == 4.11
+assert get_max_cutoff_custom.get_cycle_id() == dag.get_cycle_id()
+# --8<-- [end:cutoff_custom]
