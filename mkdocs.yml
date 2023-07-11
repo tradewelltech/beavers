@@ -32,6 +32,7 @@ plugins:
             show_source: false
 
 markdown_extensions:
+  - def_list
   - pymdownx.inlinehilite
   - pymdownx.superfences
   - pymdownx.snippets:
