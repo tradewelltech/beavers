@@ -1,7 +1,9 @@
 """Module for replaying historical data."""
 import abc
+import collections.abc
 import dataclasses
 import logging
+import time
 from typing import Callable, Generic, Iterator, Optional, Protocol, TypeVar
 
 import pandas as pd
@@ -157,6 +159,18 @@ class _ReplaySink(Generic[T]):
     data_sink: DataSink[T]
 
 
+@dataclasses.dataclass(frozen=True)
+class ReplayCycleMetrics:
+    """Metrics for each replay cycle."""
+
+    timestamp: pd.Timestamp
+    cycle_id: int
+    source_records: int
+    sink_records: int
+    cycle_time_ns: int
+    warp_ratio: float
+
+
 @dataclasses.dataclass
 class ReplayDriver:
     """
@@ -208,22 +222,37 @@ class ReplayDriver:
     def is_done(self) -> bool:
         return self.current_time > self.context.end
 
-    def run_cycle(self):
-        st = pd.Timestamp.now()
-        records, next_timestamp = self.read_sources()
-        if records or self.dag.get_next_timer() <= self.current_time:
-            self.update_dag()
-            self.flush_sinks()
-            et = pd.Timestamp.now()
-            warp_ratio = self.context.frequency / (et - st)
-            logger.info(
-                f"Running cycle={self.dag.get_cycle_id()} time={self.current_time} "
-                f"records={records} warp={warp_ratio:.1f}"
+    def run_cycle(self) -> Optional[ReplayCycleMetrics]:
+        st = time.time_ns()
+        source_records, next_timestamp = self.read_sources()
+        if source_records or self.dag.get_next_timer() <= self.current_time:
+            timestamp = min(self.current_time, self.context.end)
+            self.dag.execute(timestamp)
+            sink_records = self.flush_sinks()
+            et = time.time_ns()
+            warp_ratio = self.context.frequency.value / (et - st)
+            metrics = ReplayCycleMetrics(
+                timestamp=timestamp,
+                cycle_id=self.dag.get_cycle_id(),
+                source_records=source_records,
+                sink_records=sink_records,
+                cycle_time_ns=et - st,
+                warp_ratio=warp_ratio,
             )
+            logger.info(
+                f"Running cycle={metrics.cycle_id} "
+                f"timestamp={metrics.timestamp} "
+                f"source_records={metrics.source_records} "
+                f"sink_records={metrics.sink_records} "
+                f"warp={warp_ratio:.1f}"
+            )
+        else:
+            metrics = None
 
         self.current_time = max(
             next_timestamp, self.current_time + self.context.frequency
         ).ceil(self.context.frequency)
+        return metrics
 
     def read_sources(self) -> tuple[int, pd.Timestamp]:
         records = 0
@@ -239,11 +268,19 @@ class ReplayDriver:
     def update_dag(self):
         self.dag.execute(self.current_time)
 
-    def flush_sinks(self):
+    def flush_sinks(self) -> int:
+        records = 0
         for sink in self.sinks:
             for node in sink.nodes:
                 if node.get_cycle_id() == self.dag.get_cycle_id():
+                    sink_value = node.get_sink_value()
+                    records += (
+                        len(sink_value)
+                        if isinstance(sink_value, collections.abc.Sized)
+                        else 1
+                    )
                     sink.data_sink.append(self.current_time, node.get_sink_value())
+        return records
 
 
 def _create_sources(
