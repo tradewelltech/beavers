@@ -46,7 +46,7 @@ If the DAG is executed again, the value of the stream node will be reset to its 
 --8<-- "examples/dag_concepts.py:stream_node_again"
 ```
 
-Again, the default empty value is set to `[]`, but it can be customized:
+The default empty value is set to `[]`, but it can be customized:
 ```python
 --8<-- "examples/dag_concepts.py:stream_node_empty"
 ```
@@ -67,6 +67,8 @@ A state node retains its value from one DAG execution to the next, even if it di
 ```python
 --8<-- "examples/dag_concepts.py:state_node"
 ```
+
+State nodes have an empty value
 
 ## Const Node
 
@@ -93,3 +95,17 @@ Or key word arguments:
 ```python
 --8<-- "examples/dag_concepts.py:map_key_word"
 ```
+
+## State vs Stream
+
+Stream Nodes:
+- need their return type to implement `collections.abc.Sized`
+- need an empty value to be specfied (which default to `[]`)
+- have their value reset to empty when they don't update
+- are not considered updated if they return empty
+
+State Nodes:
+- Can return any type
+- don't require an empty value
+- retain their value on cycle they don't update
+- are always considered updated if they are called

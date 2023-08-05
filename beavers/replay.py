@@ -37,10 +37,9 @@ class ReplayContext:
     frequency: pd.Timedelta
 
 
-class DataSource(abc.ABC, Generic[T]):
+class DataSource(Protocol[T]):
     """Interface for replaying historical data from a file or database."""
 
-    @abc.abstractmethod
     def read_to(self, timestamp: pd.Timestamp) -> T:
         """
         Read from the data source, all the way to the provided timestamp (inclusive).
@@ -60,7 +59,6 @@ class DataSource(abc.ABC, Generic[T]):
 
         """
 
-    @abc.abstractmethod
     def get_next(self) -> pd.Timestamp:
         """
         Return the next timestamp for which there is data.
@@ -77,10 +75,9 @@ class DataSource(abc.ABC, Generic[T]):
         """
 
 
-class DataSink(abc.ABC, Generic[T]):
+class DataSink(Protocol[T]):
     """Interface for saving the results of a replay to a file or database."""
 
-    @abc.abstractmethod
     def append(self, timestamp: pd.Timestamp, data: T):
         """
         Append data for the current cycle.
@@ -94,7 +91,6 @@ class DataSink(abc.ABC, Generic[T]):
 
         """
 
-    @abc.abstractmethod
     def close(self):
         """Flush the data and clean up resources."""
 
@@ -102,14 +98,13 @@ class DataSink(abc.ABC, Generic[T]):
 class DataSourceProvider(Protocol[T]):
     """Interface for the provision of `DataSource`."""
 
-    @abc.abstractmethod
-    def __call__(self, context: ReplayContext) -> DataSource[T]:
+    def __call__(self, replay_context: ReplayContext) -> DataSource[T]:
         """
-        Create a `DataSource` for the given context.
+        Create a `DataSource` for the given replay_context.
 
         Parameters
         ----------
-        context:
+        replay_context:
             Information about the replay that's about to run
 
         Returns
@@ -124,13 +119,13 @@ class DataSinkProvider(Protocol[T]):
     """Interface for the provision of `DataSink`."""
 
     @abc.abstractmethod
-    def __call__(self, context: ReplayContext) -> DataSink[T]:
+    def __call__(self, replay_context: ReplayContext) -> DataSink[T]:
         """
-        Create a `DataSink` for the given context.
+        Create a `DataSink` for the given replay_context.
 
         Parameters
         ----------
-        context:
+        replay_context:
             Information about the replay that's about to run
 
         Returns
@@ -193,7 +188,7 @@ class ReplayDriver:
     """
 
     dag: Dag
-    context: ReplayContext
+    replay_context: ReplayContext
     sources: list[_ReplaySource]
     sinks: list[_ReplaySink]
     current_time: pd.Timestamp
@@ -201,16 +196,16 @@ class ReplayDriver:
     @staticmethod
     def create(
         dag: Dag,
-        context: ReplayContext,
+        replay_context: ReplayContext,
         data_source_providers: dict[str, DataSourceProvider],
         data_sink_providers: dict[str, DataSinkProvider],
     ) -> "ReplayDriver":
         return ReplayDriver(
             dag,
-            context,
-            _create_sources(dag, context, data_source_providers),
-            _create_sinks(dag, context, data_sink_providers),
-            current_time=context.start,
+            replay_context,
+            _create_sources(dag, replay_context, data_source_providers),
+            _create_sinks(dag, replay_context, data_sink_providers),
+            current_time=replay_context.start,
         )
 
     def run(self):
@@ -220,17 +215,17 @@ class ReplayDriver:
             sink.data_sink.close()
 
     def is_done(self) -> bool:
-        return self.current_time > self.context.end
+        return self.current_time > self.replay_context.end
 
     def run_cycle(self) -> Optional[ReplayCycleMetrics]:
         st = time.time_ns()
         source_records, next_timestamp = self.read_sources()
         if source_records or self.dag.get_next_timer() <= self.current_time:
-            timestamp = min(self.current_time, self.context.end)
+            timestamp = min(self.current_time, self.replay_context.end)
             self.dag.execute(timestamp)
             sink_records = self.flush_sinks()
             et = time.time_ns()
-            warp_ratio = self.context.frequency.value / (et - st)
+            warp_ratio = self.replay_context.frequency.value / (et - st)
             metrics = ReplayCycleMetrics(
                 timestamp=timestamp,
                 cycle_id=self.dag.get_cycle_id(),
@@ -250,13 +245,13 @@ class ReplayDriver:
             metrics = None
 
         self.current_time = max(
-            next_timestamp, self.current_time + self.context.frequency
-        ).ceil(self.context.frequency)
+            next_timestamp, self.current_time + self.replay_context.frequency
+        ).ceil(self.replay_context.frequency)
         return metrics
 
     def read_sources(self) -> tuple[int, pd.Timestamp]:
         records = 0
-        next_timestamp = self.context.end
+        next_timestamp = self.replay_context.end
         for replay_source in self.sources:
             source_data = replay_source.data_source.read_to(self.current_time)
             next_timestamp = min(next_timestamp, replay_source.data_source.get_next())
@@ -285,7 +280,7 @@ class ReplayDriver:
 
 def _create_sources(
     dag: Dag,
-    context: ReplayContext,
+    replay_context: ReplayContext,
     data_source_providers: dict[str, DataSourceProvider],
 ) -> list[_ReplaySource]:
     source_nodes = dag.get_sources()
@@ -297,13 +292,17 @@ def _create_sources(
             f"{nodes_names}  vs {source_names}"
         )
     return [
-        _ReplaySource(name, source_nodes[name], data_source_providers[name](context))
+        _ReplaySource(
+            name, source_nodes[name], data_source_providers[name](replay_context)
+        )
         for name in data_source_providers.keys()
     ]
 
 
 def _create_sinks(
-    dag: Dag, context: ReplayContext, data_sink_providers: dict[str, DataSinkProvider]
+    dag: Dag,
+    replay_context: ReplayContext,
+    data_sink_providers: dict[str, DataSinkProvider],
 ) -> list[_ReplaySink]:
     sink_nodes = dag.get_sinks()
     nodes_names = sorted(sink_nodes.keys())
@@ -314,7 +313,7 @@ def _create_sinks(
             f"{nodes_names}  vs {sink_names}"
         )
     return [
-        _ReplaySink(name, sink_nodes[name], data_sink_providers[name](context))
+        _ReplaySink(name, sink_nodes[name], data_sink_providers[name](replay_context))
         for name in data_sink_providers.keys()
     ]
 
