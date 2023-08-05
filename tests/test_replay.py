@@ -257,8 +257,8 @@ def test_replay_read_sources():
     dag = Dag()
     dag.source_stream([], "hello")
     driver = ReplayDriver.create(
-        dag,
-        context=ReplayContext(
+        dag=dag,
+        replay_context=ReplayContext(
             pd.to_datetime("2023-01-01", utc=True),
             pd.to_datetime("2023-01-02", utc=True) - pd.to_timedelta("1ns"),
             pd.to_timedelta("12h"),
@@ -286,8 +286,8 @@ def test_replay_run_cycle():
     dag = Dag()
     dag.source_stream([], "hello")
     driver = ReplayDriver.create(
-        dag,
-        context=ReplayContext(
+        dag=dag,
+        replay_context=ReplayContext(
             pd.to_datetime("2023-01-01", utc=True),
             pd.to_datetime("2023-01-02", utc=True) - pd.to_timedelta("1ns"),
             pd.to_timedelta("12h"),
