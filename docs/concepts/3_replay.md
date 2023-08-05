@@ -97,6 +97,22 @@ The replay driver is responsible for putting the dag, context, sources and sinks
 ```
 
 
-## Reading files partitioned by time
+## Reading Files Partitioned By Time
 
-TODO
+Assuming:
+
+- you want to replay a dag for a long period of time.
+- all that historic data doesn't fit into time
+- the data is partitioned by time period. For example one file per day, `input_2023-01-01.csv`.
+
+It's then possible, with the `IteratorDataSourceAdapter` to load each file one by one as they are needed.
+
+In this example, csv files are stored under . We need to provide:
+
+- a generator that will yield a `DataSource` for each file, in order
+- a way to concatenate the output of 2 `DataSource`. In this case we'll use `+` to merge two lists
+- an empty value for the case there is no more data, or we reach the last file.
+
+```python
+--8<-- "examples/replay_concepts.py:iterator_data_source_adapter"
+```
