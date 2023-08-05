@@ -241,3 +241,78 @@ def test_iterator_data_source_cutoff():
             timestamp=pd.Timestamp("2022-01-01 00:02:00+0000", tz="UTC"), value="hello"
         )
     ]
+
+
+def test_replay_read_sources():
+    source = ListDataSource(
+        [
+            Word(pd.to_datetime("2023-01-01 00:01:00Z"), "1"),
+            Word(pd.to_datetime("2023-01-01 00:02:00Z"), "2"),
+            Word(pd.to_datetime("2023-01-01 12:01:00Z"), "3"),
+            Word(pd.to_datetime("2023-01-01 12:04:00Z"), "4"),
+        ],
+        attrgetter("timestamp"),
+    )
+
+    dag = Dag()
+    dag.source_stream([], "hello")
+    driver = ReplayDriver.create(
+        dag=dag,
+        replay_context=ReplayContext(
+            pd.to_datetime("2023-01-01", utc=True),
+            pd.to_datetime("2023-01-02", utc=True) - pd.to_timedelta("1ns"),
+            pd.to_timedelta("12h"),
+        ),
+        data_source_providers={"hello": lambda x: source},
+        data_sink_providers={},
+    )
+
+    records, timestamp = driver.read_sources()
+    assert timestamp == pd.to_datetime("2023-01-01 00:01:00Z", utc=True)
+    assert records == 0
+
+
+def test_replay_run_cycle():
+    source = ListDataSource(
+        [
+            Word(pd.to_datetime("2023-01-01 00:01:00Z"), "1"),
+            Word(pd.to_datetime("2023-01-01 00:02:00Z"), "2"),
+            Word(pd.to_datetime("2023-01-01 12:01:00Z"), "3"),
+            Word(pd.to_datetime("2023-01-01 12:04:00Z"), "4"),
+        ],
+        attrgetter("timestamp"),
+    )
+
+    dag = Dag()
+    dag.source_stream([], "hello")
+    driver = ReplayDriver.create(
+        dag=dag,
+        replay_context=ReplayContext(
+            pd.to_datetime("2023-01-01", utc=True),
+            pd.to_datetime("2023-01-02", utc=True) - pd.to_timedelta("1ns"),
+            pd.to_timedelta("12h"),
+        ),
+        data_source_providers={"hello": lambda x: source},
+        data_sink_providers={},
+    )
+
+    metrics = driver.run_cycle()
+    assert metrics is None
+    assert driver.current_time == pd.to_datetime("2023-01-01 12:00:00Z")
+
+    metrics = driver.run_cycle()
+    assert metrics.timestamp == pd.to_datetime("2023-01-01 12:00:00Z")
+    assert metrics.source_records == 2
+    assert metrics.sink_records == 0
+    assert metrics.cycle_time_ns > 0
+    assert metrics.warp_ratio > 0.0
+    assert driver.current_time == pd.to_datetime("2023-01-02 00:00:00Z")
+
+    metrics = driver.run_cycle()
+    assert metrics.timestamp == pd.to_datetime("2023-01-01 23:59:59.999999999Z")
+    assert metrics.source_records == 2
+    assert metrics.sink_records == 0
+    assert metrics.cycle_time_ns > 0
+    assert metrics.warp_ratio > 0.0
+    assert driver.current_time == pd.to_datetime("2023-01-02 12:00:00Z")
+    assert driver.is_done()
