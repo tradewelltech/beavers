@@ -260,9 +260,6 @@ class ReplayDriver:
                 records += len(source_data)
         return records, next_timestamp
 
-    def update_dag(self):
-        self.dag.execute(self.current_time)
-
     def flush_sinks(self) -> int:
         records = 0
         for sink in self.sinks:
