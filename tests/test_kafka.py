@@ -1320,4 +1320,4 @@ def test_runtime_sink_topic():
     ]
 
     dag.execute()
-    runtime_sink_topic.serialize(dag.get_cycle_id()) == []
+    assert runtime_sink_topic.serialize(dag.get_cycle_id()) == []
