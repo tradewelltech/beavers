@@ -181,7 +181,7 @@ class _NodeInputs:
         return self.nodes
 
 
-NO_INPUTS = _NodeInputs.create([], {})
+_NO_INPUTS = _NodeInputs.create([], {})
 
 
 @dataclasses.dataclass
@@ -193,7 +193,7 @@ class _RuntimeNodeData(typing.Generic[T]):
     cycle_id: int
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True, eq=False)
 class Node(typing.Generic[T]):
     """
     Represent an element in a `Dag`.
@@ -219,7 +219,7 @@ class Node(typing.Generic[T]):
     def _create(
         value: T = None,
         function: typing.Optional[typing.Callable[[...], T]] = None,
-        inputs: _NodeInputs = NO_INPUTS,
+        inputs: _NodeInputs = _NO_INPUTS,
         empty: typing.Any = _STATE_EMPTY,
         notifications: int = 1,
     ) -> Node:
@@ -354,7 +354,7 @@ class Dag:
         return self._add_node(
             Node._create(
                 function=_unchanged_callback,
-                inputs=NO_INPUTS,
+                inputs=_NO_INPUTS,
                 value=value,
                 notifications=0,
             )
@@ -386,7 +386,7 @@ class Dag:
             node = self._add_stream(
                 function=_SourceStreamFunction(empty, name),
                 empty=empty,
-                inputs=NO_INPUTS,
+                inputs=_NO_INPUTS,
             )
             if name:
                 self._sources[name] = node
@@ -476,7 +476,7 @@ class Dag:
             Node._create(
                 value=function.timer_manager,
                 function=function,
-                inputs=NO_INPUTS,
+                inputs=_NO_INPUTS,
                 notifications=1,
             )
         )

@@ -1,4 +1,5 @@
 import asyncio
+import operator
 import time
 
 import pandas as pd
@@ -572,6 +573,22 @@ def test_recalculate_clean_node():
     node._recalculate(1)
     with pytest.raises(RuntimeError, match="Calling recalculate on un-notified node"):
         node._recalculate(2)
+
+
+def test_can_add_node_copy():
+    dag = Dag()
+    source = dag.source_stream([])
+    node_one = dag.stream(operator.__add__).map(source, source)
+    node_two = dag.stream(operator.__add__).map(source, source)
+    assert node_one is not node_two
+    assert node_one != node_two
+
+
+def test_can_not_add_node_back():
+    dag = Dag()
+    source = dag.source_stream([])
+    with pytest.raises(ValueError, match="Node already in dag"):
+        dag._add_node(source)
 
 
 def test_unchanged_callback():
