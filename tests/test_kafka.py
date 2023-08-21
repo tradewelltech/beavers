@@ -572,8 +572,10 @@ def test_kafka_driver_word_count(log_helper: LogHelper):
     assert len(log_helper.flush()) == 1
 
     metrics = kafka_driver.flush_metrics()
+    assert metrics.deserialization_ns > 0
+    assert metrics.deserialization_count == 6
     assert metrics.serialization_ns > 0
-    assert metrics.serialization_count == 6
+    assert metrics.serialization_count == 3
     assert metrics.execution_ns > 0
     assert metrics.execution_count == 3
 
@@ -1308,19 +1310,14 @@ def test_runtime_sink_topic():
     sink = dag.sink("sink", node)
     runtime_sink_topic = _RuntimeSinkTopic([sink], WorldCountSerializer("topic-1"))
 
-    producer_manager = MockProducerManager()
     dag.execute()
-    runtime_sink_topic.flush(dag.get_cycle_id(), producer_manager)
-    assert producer_manager.messages == []
+    assert runtime_sink_topic.serialize(dag.get_cycle_id()) == []
 
     node.set_stream({"foo": "bar"})
     dag.execute()
-    runtime_sink_topic.flush(dag.get_cycle_id(), producer_manager)
-    assert producer_manager.messages == [
+    assert runtime_sink_topic.serialize(dag.get_cycle_id()) == [
         KafkaProducerMessage(topic="topic-1", key=b"foo", value=b"bar")
     ]
-    producer_manager.messages.clear()
 
     dag.execute()
-    runtime_sink_topic.flush(dag.get_cycle_id(), producer_manager)
-    assert producer_manager.messages == []
+    assert runtime_sink_topic.serialize(dag.get_cycle_id()) == []
