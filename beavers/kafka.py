@@ -160,7 +160,7 @@ class _RuntimeSourceTopic(Generic[T]):
     def flush(self) -> bool:
         results: T = self._deserializer(self._messages)
         self._messages = []
-        if results:
+        if len(results):
             self._node.set_stream(results)
             return True
         else:
