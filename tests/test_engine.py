@@ -10,6 +10,7 @@ from beavers.engine import (
     UTC_EPOCH,
     UTC_MAX,
     Dag,
+    DagMetrics,
     TimerManager,
     _NodeInputs,
     _unchanged_callback,
@@ -593,3 +594,30 @@ def test_can_not_add_node_back():
 
 def test_unchanged_callback():
     assert _unchanged_callback() is _STATE_UNCHANGED
+
+
+def test_metrics():
+    dag = Dag()
+    x_source = dag.source_stream([], "x")
+    x = dag.state(GetLatest(40)).map(x_source)
+    y_source = dag.source_stream([], "y")
+    y = dag.state(GetLatest(41)).map(y_source)
+    z = dag.state(add).map(x, y)
+
+    dag.state(lambda left, right: left - right).map(y, z)
+
+    dag.execute()
+    assert dag.flush_metrics() == DagMetrics(13, 8, 1, 8)
+
+    dag.execute()
+    assert dag.flush_metrics() == DagMetrics(0, 0, 1, 8)
+    assert dag.flush_metrics() == DagMetrics(0, 0, 0, 8)
+
+    x_source.set_stream([1, 2, 3])
+    y_source.set_stream([1, 2, 3])
+    dag.execute()
+    assert dag.flush_metrics() == DagMetrics(8, 6, 1, 8)
+
+    x_source.set_stream([1, 2, 3])
+    dag.execute()
+    assert dag.flush_metrics() == DagMetrics(4, 4, 1, 8)

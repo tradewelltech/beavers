@@ -255,13 +255,15 @@ class Node(typing.Generic[T]):
     def _stain(self):
         self._runtime_data.notifications += 1
 
-    def _clean(self, cycle_id: int):
+    def _clean(self, cycle_id: int) -> bool:
         if self._should_recalculate():
             self._recalculate(cycle_id)
+            return True
         else:
             if self._is_stream():
                 self._runtime_data.value = self._empty
                 self._runtime_data.notifications = 0
+            return False
 
     def _is_stream(self) -> bool:
         return self._empty is not _STATE_EMPTY
@@ -326,6 +328,16 @@ def _unchanged_callback():
     return _STATE_UNCHANGED
 
 
+@dataclasses.dataclass
+class DagMetrics:
+    """Metrics for the execution of a dag."""
+
+    notification_count: int = 0
+    updated_node_count: int = 0
+    cycle_count: int = 0
+    node_count: int = 0
+
+
 class Dag:
     """Main class used for building and executing a dag."""
 
@@ -340,6 +352,7 @@ class Dag:
         self._silent_now_node: Node[pd.Timestamp] = self.silence(self._now_node)
         self._timer_manager_nodes: list[Node[TimerManager]] = []
         self._cycle_id: int = 0
+        self._metrics = DagMetrics(node_count=len(self._nodes))
 
     def const(self, value: T) -> Node[T]:
         """
@@ -551,7 +564,17 @@ class Dag:
             self._flush_timers(timestamp)
 
         for node in self._nodes:
-            node._clean(self._cycle_id)
+            self._metrics.notification_count += node._runtime_data.notifications
+            cleaned = node._clean(self._cycle_id)
+            if cleaned:
+                self._metrics.updated_node_count += 1
+        self._metrics.cycle_count += 1
+        self._metrics.node_count = len(self._nodes)
+
+    def flush_metrics(self) -> DagMetrics:
+        results = self._metrics
+        self._metrics = DagMetrics(node_count=len(self._nodes))
+        return results
 
     def _add_stream(
         self, function: typing.Callable[[...], T], empty: T, inputs: _NodeInputs
