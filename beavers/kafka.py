@@ -457,6 +457,7 @@ class KafkaDriver:
         self._consumer_manager = consumer_manager
         self._sink_topics = runtime_sink_topics
         self._producer_manager = producer_manager
+        self._cycle_time = UTC_EPOCH
         self._metrics = ExecutionMetrics()
 
     @staticmethod
@@ -542,18 +543,18 @@ class KafkaDriver:
         with self._metrics.measure_deserialization_time():
             for handler in self._source_topics.values():
                 has_messages = handler.flush() or has_messages
-        cycle_time = (
+        self._cycle_time = (
             self._consumer_manager._get_priming_watermark() or pd.Timestamp.utcnow()
         )
 
-        if has_messages or self._dag.get_next_timer() <= cycle_time:
+        if has_messages or self._dag.get_next_timer() <= self._cycle_time:
             with self._metrics.measure_execution_time():
-                self._dag.execute(cycle_time)
+                self._dag.execute(self._cycle_time)
                 logger.debug(
                     "Ran cycle cycle_id=%d, messages=%d, time=%s, next_timer=%s",
                     self._dag.get_cycle_id(),
                     len(messages),
-                    cycle_time,
+                    self._cycle_time,
                     self._dag.get_next_timer(),
                 )
             return True
