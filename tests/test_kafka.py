@@ -11,12 +11,11 @@ import confluent_kafka
 import mock
 import pandas as pd
 import pytest
-from confluent_kafka import KafkaError, Message, TopicPartition
+from confluent_kafka import Message, TopicPartition
 from confluent_kafka.admin import ClusterMetadata, PartitionMetadata, TopicMetadata
 
 from beavers.engine import UTC_EPOCH, UTC_MAX, Dag
 from beavers.kafka import (
-    KAFKA_EOF_CODE,
     ConsumerMetrics,
     KafkaDriver,
     KafkaProducerMessage,
@@ -69,6 +68,8 @@ class MockConsumer:
         self._paused: list[TopicPartition] = []
         self._topics: dict[str, TopicMetadata] = {}
         self._offsets_for_time: dict[Tuple[TopicPartition, int], TopicPartition] = {}
+        self._watermark_offsets: dict[TopicPartition, tuple[int, int]] = {}
+        self._committed: dict[TopicPartition:int] = {}
 
     def append(self, message: Message):
         self._queue.put(message)
@@ -112,6 +113,15 @@ class MockConsumer:
         self._offsets_for_time[
             TopicPartition(topic, partition), timestamp.value // 1_000_000
         ] = TopicPartition(topic, partition, offset)
+
+    def get_watermark_offsets(self, partition: TopicPartition) -> tuple[int, int]:
+        return self._watermark_offsets[partition]
+
+    def committed(self, partitions: list[TopicPartition]):
+        return [
+            TopicPartition(tp.topic, tp.partition, self._committed[tp])
+            for tp in partitions
+        ]
 
 
 class MockProducer:
@@ -166,12 +176,13 @@ def test_get_previous_start_of_day_nyc():
 
 
 def test_consumer_manager_priming():
-    partitions = [
-        TopicPartition("topic-a", 0, offset=0),
-        TopicPartition("topic-a", 1, offset=10),
-        TopicPartition("topic-b", 0, offset=100),
-        TopicPartition("topic-c", 0, offset=1000),
-    ]
+    tp0 = TopicPartition("topic-a", 0, offset=0)
+    tp1 = TopicPartition("topic-a", 1, offset=10)
+    tp2 = TopicPartition("topic-b", 0, offset=100)
+    tp3 = TopicPartition("topic-c", 0, offset=1000)
+
+    watermark_offsets = {tp0: (10, 11), tp1: (20, 22), tp2: (30, 32), tp3: (40, 43)}
+
     cutoff = pd.to_datetime("2022-10-19 01:00:00", utc=True)
 
     cutoff_ms = cutoff.value // 1_000_000
@@ -179,7 +190,7 @@ def test_consumer_manager_priming():
     mock_consumer = MockConsumer()
     consumer_manager = _ConsumerManager(
         cutoff=pd.to_datetime("2022-10-19 01:00:00", utc=True),
-        partitions=partitions,
+        partitions=watermark_offsets,
         consumer=mock_consumer,
         batch_size=100,
         max_held_messages=200,
@@ -191,7 +202,12 @@ def test_consumer_manager_priming():
 
     mock_consumer.append(
         mock_kafka_message(
-            partitions[0].topic, partitions[0].partition, cutoff_ms - 100, b"M1", None
+            tp0.topic,
+            tp0.partition,
+            cutoff_ms - 100,
+            b"M1",
+            None,
+            10,
         )
     )
     assert consumer_manager.poll(0.0) == []
@@ -200,19 +216,13 @@ def test_consumer_manager_priming():
 
     # 1. Messages on all partitions, can start releasing messages
     mock_consumer.append(
-        mock_kafka_message(
-            partitions[1].topic, partitions[1].partition, cutoff_ms - 100, b"M2", None
-        )
+        mock_kafka_message(tp1.topic, tp1.partition, cutoff_ms - 100, b"M2", None, 20)
     )
     mock_consumer.append(
-        mock_kafka_message(
-            partitions[2].topic, partitions[2].partition, cutoff_ms - 100, b"M3", None
-        )
+        mock_kafka_message(tp2.topic, tp2.partition, cutoff_ms - 100, b"M3", None, 30)
     )
     mock_consumer.append(
-        mock_kafka_message(
-            partitions[3].topic, partitions[3].partition, cutoff_ms - 50, b"M4", None
-        )
+        mock_kafka_message(tp3.topic, tp3.partition, cutoff_ms - 50, b"M4", None, 40)
     )
     messages = consumer_manager.poll(0.0)
     assert [m.value() for m in messages] == [b"M1", b"M2", b"M3"]
@@ -220,24 +230,16 @@ def test_consumer_manager_priming():
 
     # 2. Messages come out of order
     mock_consumer.append(
-        mock_kafka_message(
-            partitions[0].topic, partitions[0].partition, cutoff_ms - 90, b"M5", None
-        )
+        mock_kafka_message(tp0.topic, tp0.partition, cutoff_ms - 90, b"M5", None, 11)
     )
     mock_consumer.append(
-        mock_kafka_message(
-            partitions[1].topic, partitions[1].partition, cutoff_ms - 90, b"M6", None
-        )
+        mock_kafka_message(tp1.topic, tp1.partition, cutoff_ms - 90, b"M6", None, 21)
     )
     mock_consumer.append(
-        mock_kafka_message(
-            partitions[2].topic, partitions[2].partition, cutoff_ms - 91, b"M7", None
-        )
+        mock_kafka_message(tp2.topic, tp2.partition, cutoff_ms - 91, b"M7", None, 31)
     )
     mock_consumer.append(
-        mock_kafka_message(
-            partitions[2].topic, partitions[2].partition, cutoff_ms - 90, b"M8", None
-        )
+        mock_kafka_message(tp2.topic, tp2.partition, cutoff_ms - 90, b"M8", None, 32)
     )
     messages = consumer_manager.poll(0.0)
     assert [m.value() for m in messages] == [b"M7", b"M5", b"M6", b"M8"]
@@ -246,56 +248,29 @@ def test_consumer_manager_priming():
         cutoff_ms - 90, unit="ms", utc=True
     )
 
-    # 3. Some partitions move pass EOF
     mock_consumer.append(
-        mock_kafka_message(
-            partitions[0].topic,
-            partitions[0].partition,
-            None,
-            b"EOF",
-            error=KafkaError(KAFKA_EOF_CODE),
-        )
-    )
-    mock_consumer.append(
-        mock_kafka_message(
-            partitions[1].topic,
-            partitions[1].partition,
-            None,
-            b"EOF",
-            error=KafkaError(KAFKA_EOF_CODE),
-        )
-    )
-    mock_consumer.append(
-        mock_kafka_message(
-            partitions[2].topic,
-            partitions[2].partition,
-            None,
-            b"EOF",
-            error=KafkaError(KAFKA_EOF_CODE),
-        )
+        mock_kafka_message(tp1.topic, tp1.partition, cutoff_ms - 90, b"M9", None, 22)
     )
     messages = consumer_manager.poll(0.0)
-    assert [m.value() for m in messages] == [b"M4"]
-    assert [m.error().code() if m.error() else None for m in messages] == [None]
-    assert len(consumer_manager._held_messages) == 3
+    assert [m.value() for m in messages] == [b"M9", b"M4"]
+    assert len(consumer_manager._held_messages) == 0
     assert consumer_manager._get_priming_watermark() == pd.to_datetime(
         cutoff_ms - 50, unit="ms", utc=True
     )
 
+    # Last partitions move, messages are released freely
     mock_consumer.append(
-        mock_kafka_message(
-            partitions[3].topic, partitions[3].partition, cutoff_ms + 10, b"M9", None
-        )
+        mock_kafka_message(tp3.topic, tp3.partition, cutoff_ms + 10, b"M9", None, 41)
     )
     messages = consumer_manager.poll(0.0)
-    assert [m.value() for m in messages] == [b"M9", b"EOF", b"EOF", b"EOF"]
+    assert [m.value() for m in messages] == [b"M9"]
     assert consumer_manager._held_messages == []
     assert consumer_manager._get_priming_watermark() is None
 
 
 def test_consumer_manager_update_partition_info():
     topic_partition = TopicPartition("topic-a", 0, offset=100)
-    partitions = [topic_partition]
+    partitions = {topic_partition: (1, 2)}
     cutoff = pd.to_datetime("2022-10-19 01:00:00", utc=True)
 
     mock_consumer = MockConsumer()
@@ -315,6 +290,7 @@ def test_consumer_manager_update_partition_info():
                 partition=topic_partition.partition,
                 value=b"HELLO",
                 timestamp=cutoff,
+                offset=1,
             )
         ]
     )
@@ -330,39 +306,30 @@ def test_consumer_manager_update_partition_info():
                 mock_kafka_message(
                     topic=topic_partition.topic,
                     partition=topic_partition.partition,
-                    value=b"EOF",
-                    error=KafkaError(KAFKA_EOF_CODE),
+                    value=b"WPR:D",
+                    offset=2,
                 )
             ]
         )
-        assert (
-            consumer_manager._low_water_mark_ns
-            == (cutoff + pd.to_timedelta("20s")).value
-        )
-
-    consumer_manager._update_partition_info(
-        [
-            mock_kafka_message(
-                topic=topic_partition.topic,
-                partition=topic_partition.partition,
-                value=b"123",
-                error=KafkaError(123),
-            )
-        ]
+    assert (
+        consumer_manager._low_water_mark_ns == (cutoff + pd.to_timedelta("20s")).value
     )
+    assert consumer_manager._get_priming_watermark() is None
 
 
 def test_consumer_manager_batching():
     tp1 = TopicPartition("topic-a", 0, offset=0)
     tp2 = TopicPartition("topic-a", 1, offset=0)
-    partitions = [tp1, tp2]
     cutoff = pd.to_datetime("2022-10-19 01:00:00", utc=True)
     cutoff_ms = cutoff.value // 1_000_000
 
     mock_consumer = MockConsumer()
     consumer_manager = _ConsumerManager(
         cutoff=pd.to_datetime("2022-10-19 01:00:00", utc=True),
-        partitions=partitions,
+        partitions={
+            tp1: (0, 2),
+            tp2: (0, 2),
+        },
         consumer=mock_consumer,
         batch_size=2,
         max_held_messages=200,
@@ -371,20 +338,20 @@ def test_consumer_manager_batching():
     assert consumer_manager._get_priming_watermark() == UTC_EPOCH
 
     mock_consumer.append(
-        mock_kafka_message(tp1.topic, tp1.partition, cutoff_ms + 1, b"MSG1.1")
+        mock_kafka_message(tp1.topic, tp1.partition, cutoff_ms + 1, b"MSG1.1", offset=0)
     )
 
     mock_consumer.append(
-        mock_kafka_message(tp2.topic, tp2.partition, cutoff_ms + 1, b"MSG2.1")
+        mock_kafka_message(tp2.topic, tp2.partition, cutoff_ms + 1, b"MSG2.1", offset=0)
     )
     mock_consumer.append(
-        mock_kafka_message(tp2.topic, tp2.partition, cutoff_ms + 2, b"MSG2.2")
+        mock_kafka_message(tp2.topic, tp2.partition, cutoff_ms + 2, b"MSG2.2", offset=1)
     )
     mock_consumer.append(
-        mock_kafka_message(tp2.topic, tp2.partition, cutoff_ms + 3, b"MSG2.3")
+        mock_kafka_message(tp2.topic, tp2.partition, cutoff_ms + 3, b"MSG2.3", offset=2)
     )
     mock_consumer.append(
-        mock_kafka_message(tp2.topic, tp2.partition, cutoff_ms + 4, b"MSG2.4")
+        mock_kafka_message(tp2.topic, tp2.partition, cutoff_ms + 4, b"MSG2.4", offset=3)
     )
 
     messages = consumer_manager.poll(0.0)
@@ -392,7 +359,7 @@ def test_consumer_manager_batching():
     assert [m.value() for m in messages] == [b"MSG1.1", b"MSG2.1"]
 
     mock_consumer.append(
-        mock_kafka_message(tp1.topic, tp1.partition, cutoff_ms + 2, b"MSG1.2")
+        mock_kafka_message(tp1.topic, tp1.partition, cutoff_ms + 2, b"MSG1.2", offset=1)
     )
     messages = consumer_manager.poll(0.0)
     assert len(messages) == 2
@@ -406,13 +373,13 @@ def test_consumer_manager_batching():
     assert messages == []
 
     mock_consumer.append(
-        mock_kafka_message(tp2.topic, tp2.partition, cutoff_ms + 5, b"MSG2.5")
+        mock_kafka_message(tp2.topic, tp2.partition, cutoff_ms + 5, b"MSG2.5", offset=4)
     )
     mock_consumer.append(
-        mock_kafka_message(tp1.topic, tp1.partition, cutoff_ms + 3, b"MSG1.3")
+        mock_kafka_message(tp1.topic, tp1.partition, cutoff_ms + 3, b"MSG1.3", offset=2)
     )
     mock_consumer.append(
-        mock_kafka_message(tp1.topic, tp1.partition, cutoff_ms + 4, b"MSG1.4")
+        mock_kafka_message(tp1.topic, tp1.partition, cutoff_ms + 4, b"MSG1.4", offset=3)
     )
 
     messages = consumer_manager.poll(0.0)
@@ -501,7 +468,7 @@ def test_kafka_driver_word_count(log_helper: LogHelper):
     mock_consumer = MockConsumer()
     consumer_manager = _ConsumerManager(
         cutoff=cutoff,
-        partitions=[TopicPartition("topic-a", 0, offset=0)],
+        partitions={TopicPartition("topic-a", 0, offset=0): (0, 4)},
         consumer=mock_consumer,
         batch_size=2,
         max_held_messages=200,
@@ -530,10 +497,10 @@ def test_kafka_driver_word_count(log_helper: LogHelper):
     assert kafka_driver.run_cycle(0.0) is False
     mock_consumer.extend(
         [
-            mock_kafka_message("topic-a", 0, cutoff_ms - 10, b"FOO"),
-            mock_kafka_message("topic-a", 0, cutoff_ms - 9, b"BAR"),
-            mock_kafka_message("topic-a", 0, cutoff_ms - 8, b"FOO"),
-            mock_kafka_message("topic-a", 0, cutoff_ms - 7, b"BARZ"),
+            mock_kafka_message("topic-a", 0, cutoff_ms - 10, b"FOO", offset=0),
+            mock_kafka_message("topic-a", 0, cutoff_ms - 9, b"BAR", offset=1),
+            mock_kafka_message("topic-a", 0, cutoff_ms - 8, b"FOO", offset=2),
+            mock_kafka_message("topic-a", 0, cutoff_ms - 7, b"BARZ", offset=3),
         ]
     )
     assert kafka_driver.run_cycle(0.0) is True
@@ -562,7 +529,9 @@ def test_kafka_driver_word_count(log_helper: LogHelper):
     assert mock_producer_manager.flush() == []
     assert log_helper.flush() == []
 
-    mock_consumer.extend([mock_kafka_message("topic-a", 0, cutoff_ms + 10, b"FOO")])
+    mock_consumer.extend(
+        [mock_kafka_message("topic-a", 0, cutoff_ms + 10, b"FOO", offset=4)]
+    )
     assert kafka_driver.run_cycle(0.0) is True
     assert mock_producer_manager.flush() == [
         KafkaProducerMessage("topic-out", b"FOO", b"3")
@@ -588,7 +557,7 @@ def test_kafka_driver_timer():
     dag = Dag()
     messages_stream = dag.source_stream([], "messages")
     timestamp_stream = dag.stream(
-        lambda x: [TimerEntry(pd.to_datetime(v), [1, 2, 3]) for v in x], []
+        lambda x: [TimerEntry(pd.to_datetime(v), [1, 2, 3]) for v in x if v], []
     ).map(messages_stream)
     timer_setter = SetATimer()
     dag.state(timer_setter).map(timestamp_stream, dag.now(), dag.timer_manager())
@@ -599,7 +568,7 @@ def test_kafka_driver_timer():
     mock_consumer = MockConsumer()
     consumer_manager = _ConsumerManager(
         cutoff=cutoff,
-        partitions=[TopicPartition("topic-a", 0, offset=0)],
+        partitions={TopicPartition("topic-a", 0, offset=0): (0, 3)},
         consumer=mock_consumer,
         batch_size=2,
         max_held_messages=200,
@@ -630,6 +599,7 @@ def test_kafka_driver_timer():
             0,
             cutoff_ms - 10,
             _timestamp_to_bytes(cutoff + pd.to_timedelta("10s")),
+            offset=1,
         )
     )
     assert kafka_driver.run_cycle(0.0) is True
@@ -642,6 +612,7 @@ def test_kafka_driver_timer():
             0,
             cutoff_ms - 5,
             _timestamp_to_bytes(cutoff + pd.to_timedelta("20s")),
+            offset=2,
         )
     )
     assert kafka_driver.run_cycle(0.0) is True
@@ -660,15 +631,13 @@ def test_kafka_driver_timer():
         assert dag.get_next_timer() == cutoff + pd.to_timedelta("20s")
 
     # Publish EOF message
-    mock_consumer.append(
-        mock_kafka_message("topic-a", 0, None, b"EOF", KafkaError(KAFKA_EOF_CODE))
-    )
+    mock_consumer.append(mock_kafka_message("topic-a", 0, None, b"", offset=3))
     with mock.patch(
         "pandas.Timestamp.utcnow",
         # Cheating a bit and go back in time:
         return_value=cutoff + pd.to_timedelta("10s"),
     ):
-        assert kafka_driver.run_cycle(0.0) is False
+        assert kafka_driver.run_cycle(0.0) is True  # Ran because of new message
         assert kafka_driver._consumer_manager._get_priming_watermark() is None
         assert dag.get_next_timer() == cutoff + pd.to_timedelta("20s")
 
@@ -686,11 +655,11 @@ def test_consumer_manager_pause_unpause():
     mock_consumer = MockConsumer()
     consumer_manager = _ConsumerManager(
         cutoff=cutoff,
-        partitions=[
-            TopicPartition("topic-a", 0, offset=0),
-            TopicPartition("topic-a", 1, offset=0),
-            TopicPartition("topic-a", 2, offset=0),
-        ],
+        partitions={
+            TopicPartition("topic-a", 0, offset=0): (0, 4),
+            TopicPartition("topic-a", 1, offset=0): (0, 1),
+            TopicPartition("topic-a", 2, offset=0): (0, 6),
+        },
         consumer=mock_consumer,
         batch_size=2,
         max_held_messages=3,
@@ -699,15 +668,33 @@ def test_consumer_manager_pause_unpause():
     # Start with a lot of message, they will be held and some partitions paused
     mock_consumer.extend(
         [
-            mock_kafka_message("topic-a", 0, cutoff - pd.to_timedelta("10s"), b"1"),
-            mock_kafka_message("topic-a", 0, cutoff - pd.to_timedelta("10s"), b"2"),
-            mock_kafka_message("topic-a", 1, cutoff - pd.to_timedelta("5s"), b"3"),
-            mock_kafka_message("topic-a", 2, cutoff - pd.to_timedelta("3s"), b"4"),
-            mock_kafka_message("topic-a", 2, cutoff - pd.to_timedelta("3s"), b"5"),
-            mock_kafka_message("topic-a", 2, cutoff - pd.to_timedelta("3s"), b"6"),
-            mock_kafka_message("topic-a", 2, cutoff - pd.to_timedelta("3s"), b"7"),
-            mock_kafka_message("topic-a", 2, cutoff - pd.to_timedelta("3s"), b"8"),
-            mock_kafka_message("topic-a", 2, cutoff - pd.to_timedelta("3s"), b"9"),
+            mock_kafka_message(
+                "topic-a", 0, cutoff - pd.to_timedelta("10s"), b"1", offset=0
+            ),
+            mock_kafka_message(
+                "topic-a", 0, cutoff - pd.to_timedelta("10s"), b"2", offset=1
+            ),
+            mock_kafka_message(
+                "topic-a", 1, cutoff - pd.to_timedelta("5s"), b"3", offset=0
+            ),
+            mock_kafka_message(
+                "topic-a", 2, cutoff - pd.to_timedelta("3s"), b"4", offset=0
+            ),
+            mock_kafka_message(
+                "topic-a", 2, cutoff - pd.to_timedelta("3s"), b"5", offset=1
+            ),
+            mock_kafka_message(
+                "topic-a", 2, cutoff - pd.to_timedelta("3s"), b"6", offset=2
+            ),
+            mock_kafka_message(
+                "topic-a", 2, cutoff - pd.to_timedelta("3s"), b"7", offset=3
+            ),
+            mock_kafka_message(
+                "topic-a", 2, cutoff - pd.to_timedelta("3s"), b"8", offset=4
+            ),
+            mock_kafka_message(
+                "topic-a", 2, cutoff - pd.to_timedelta("3s"), b"9", offset=5
+            ),
         ]
     )
     assert [m.value() for m in consumer_manager.poll(0.0)] == []
@@ -721,7 +708,9 @@ def test_consumer_manager_pause_unpause():
     # Move the most lagging partition (0) ahead, partition 1 is resumed
     mock_consumer.extend(
         [
-            mock_kafka_message("topic-a", 0, cutoff - pd.to_timedelta("5s"), b"10"),
+            mock_kafka_message(
+                "topic-a", 0, cutoff - pd.to_timedelta("5s"), b"10", offset=2
+            ),
         ]
     )
     assert [m.value() for m in consumer_manager.poll(0.0)] == []
@@ -733,8 +722,12 @@ def test_consumer_manager_pause_unpause():
     # Partition 0 and 1 go ahead of partition 2, 1 and 2 are paused
     mock_consumer.extend(
         [
-            mock_kafka_message("topic-a", 0, cutoff - pd.to_timedelta("2s"), b"11"),
-            mock_kafka_message("topic-a", 1, cutoff - pd.to_timedelta("2s"), b"12"),
+            mock_kafka_message(
+                "topic-a", 0, cutoff - pd.to_timedelta("2s"), b"11", offset=3
+            ),
+            mock_kafka_message(
+                "topic-a", 1, cutoff - pd.to_timedelta("2s"), b"12", offset=1
+            ),
         ]
     )
     assert [m.value() for m in consumer_manager.poll(0.0)] == [b"4", b"5"]
@@ -771,7 +764,9 @@ def test_consumer_manager_pause_unpause():
     # Mark partition 2 as EOF and poll. We unpause because only 1 (<3) messages are held
     mock_consumer.extend(
         [
-            mock_kafka_message("topic-a", 2, error=KafkaError(KAFKA_EOF_CODE)),
+            mock_kafka_message(
+                "topic-a", 2, cutoff - pd.to_timedelta("1s"), b"", b"EOF", offset=6
+            )
         ]
     )
     assert [m.value() for m in consumer_manager.poll(0.0)] == [b"11", b"12"]
@@ -787,8 +782,8 @@ def test_consumer_manager_pause_unpause():
     # Mark all partitions as eof
     mock_consumer.extend(
         [
-            mock_kafka_message("topic-a", 0, error=KafkaError(KAFKA_EOF_CODE)),
-            mock_kafka_message("topic-a", 1, error=KafkaError(KAFKA_EOF_CODE)),
+            mock_kafka_message("topic-a", 0, cutoff, b"", offset=4),
+            mock_kafka_message("topic-a", 1, cutoff, b"", offset=2),
         ]
     )
     assert [m.value() for m in consumer_manager.poll(0.0)] == [b"", b""]
@@ -803,14 +798,16 @@ def test_consumer_manager_pause_unpause():
 def test_consumer_manager_pause_unpause_eof():
     """In this example topic a publishes frequently but topic-b doesn't"""
     cutoff = pd.to_datetime("2022-10-19 01:00:00", utc=True)
+    tpa = TopicPartition("topic-a", 0, offset=0)
+    tpb = TopicPartition("topic-b", 0, offset=0)
 
     mock_consumer = MockConsumer()
     consumer_manager = _ConsumerManager(
         cutoff=cutoff,
-        partitions=[
-            TopicPartition("topic-a", 0, offset=0),
-            TopicPartition("topic-b", 0, offset=0),
-        ],
+        partitions={
+            tpa: (0, 9),
+            tpb: (10, 12),
+        },
         consumer=mock_consumer,
         batch_size=2,
         max_held_messages=3,
@@ -819,66 +816,77 @@ def test_consumer_manager_pause_unpause_eof():
     # Start with a lot of message, they will be held and some partitions paused
     mock_consumer.extend(
         [
-            mock_kafka_message("topic-a", 0, cutoff - pd.to_timedelta("10s"), b"1"),
-            mock_kafka_message("topic-a", 0, cutoff - pd.to_timedelta("10s"), b"2"),
-            mock_kafka_message("topic-a", 0, cutoff - pd.to_timedelta("5s"), b"3"),
-            mock_kafka_message("topic-a", 0, cutoff - pd.to_timedelta("3s"), b"4"),
-            # B messages
-            mock_kafka_message("topic-b", 0, cutoff - pd.to_timedelta("30s"), b"A"),
             mock_kafka_message(
-                "topic-b", 0, value=b"EOF", error=KafkaError(KAFKA_EOF_CODE)
+                "topic-a", 0, cutoff - pd.to_timedelta("10s"), b"1", offset=0
+            ),
+            mock_kafka_message(
+                "topic-a", 0, cutoff - pd.to_timedelta("10s"), b"2", offset=1
+            ),
+            mock_kafka_message(
+                "topic-a", 0, cutoff - pd.to_timedelta("5s"), b"3", offset=2
+            ),
+            mock_kafka_message(
+                "topic-a", 0, cutoff - pd.to_timedelta("3s"), b"4", offset=3
+            ),
+            # B messages
+            mock_kafka_message(
+                "topic-b", 0, cutoff - pd.to_timedelta("30s"), b"A", offset=10
+            ),
+            mock_kafka_message(
+                "topic-b", 0, cutoff - pd.to_timedelta("1s"), b"B", offset=11
+            ),
+            mock_kafka_message(
+                "topic-b", 0, cutoff - pd.to_timedelta("1s"), value=b"EOF", offset=12
             ),
         ]
     )
 
     assert [m.value() for m in consumer_manager.poll(0.0)] == []
-    assert mock_consumer._paused == [TopicPartition(topic="topic-a", partition=0)]
+    assert len(consumer_manager._held_messages) == 3
+    assert mock_consumer._paused == [tpa]
+
     assert [m.value() for m in consumer_manager.poll(0.0)] == [b"A"]
-    assert mock_consumer._paused == [TopicPartition(topic="topic-a", partition=0)]
+    assert mock_consumer._paused == [tpa]
+
     assert [m.value() for m in consumer_manager.poll(0.0)] == [b"1", b"2"]
-    assert mock_consumer._paused == []
+    assert len(consumer_manager._held_messages) == 4
+    assert mock_consumer._paused == [tpb]
+
     assert [m.value() for m in consumer_manager.poll(0.0)] == [b"3", b"4"]
-    assert mock_consumer._paused == []
+    assert mock_consumer._paused == [tpb]
+
     assert [m.value() for m in consumer_manager.poll(0.0)] == []
 
 
 def test_all_partitions_eof():
+    """Every topic is already live"""
     cutoff = pd.to_datetime("2022-10-19 01:00:00", utc=True)
 
     mock_consumer = MockConsumer()
     consumer_manager = _ConsumerManager(
         cutoff=cutoff,
-        partitions=[
-            TopicPartition("topic-a", 0, offset=0),
-            TopicPartition("topic-b", 0, offset=0),
-        ],
+        partitions={
+            TopicPartition("topic-a", 0, offset=0): (0, 0),
+            TopicPartition("topic-b", 0, offset=0): (10, 10),
+        },
         consumer=mock_consumer,
         batch_size=2,
         max_held_messages=3,
     )
 
     # Start with a lot of message, they will be held and some partitions paused
-    mock_consumer.extend(
-        [
-            mock_kafka_message(
-                "topic-a", 0, value=b"EOF", error=KafkaError(KAFKA_EOF_CODE)
-            ),
-            mock_kafka_message(
-                "topic-b", 0, value=b"EOF", error=KafkaError(KAFKA_EOF_CODE)
-            ),
-        ]
-    )
+    mock_consumer.extend([])
     with mock.patch(
         "pandas.Timestamp.utcnow",
         return_value=cutoff + pd.to_timedelta("20s"),
     ):
-        assert [m.value() for m in consumer_manager.poll(0.0)] == [b"EOF", b"EOF"]
+        assert [m.value() for m in consumer_manager.poll(0.0)] == []
     assert mock_consumer._paused == []  # Not pausing EOF partitions
     assert consumer_manager._get_priming_watermark() is None
     assert consumer_manager.flush_metrics() == ConsumerMetrics(
-        consumed_message_size=6,
-        consumed_message_count=2,
-        released_message_count=2,
+        consumed_message_size=0,
+        consumed_message_count=0,
+        released_message_count=0,
     )
 
 
@@ -992,13 +1000,18 @@ def test_resolve_topic_offsets_latest():
         ],
     )
 
-    assert_topic_offsets(
-        _resolve_topic_offsets(consumer, from_latest, now),
-        [
-            TopicPartition("topic-1", 0, -1),
-            TopicPartition("topic-1", 1, -1),
-        ],
-    )
+    with pytest.raises(KeyError, match="topic-1"):
+        _resolve_topic_offsets(consumer, from_latest, now)
+
+    consumer._watermark_offsets = {
+        TopicPartition("topic-1", 0): (10, 10),
+        TopicPartition("topic-1", 1): (20, 20),
+    }
+
+    assert _resolve_topic_offsets(consumer, from_latest, now) == {
+        TopicPartition("topic-1", 0): (10, 9),
+        TopicPartition("topic-1", 1): (20, 19),
+    }
 
 
 def test_from_start_of_day():
@@ -1031,13 +1044,15 @@ def test_from_start_of_day():
     consumer.mock_offset_for_time("topic-1", 0, start_of_day, 123)
     consumer.mock_offset_for_time("topic-1", 1, start_of_day, 124)
 
-    assert_topic_offsets(
-        _resolve_topic_offsets(consumer, from_start_of_day, now),
-        [
-            TopicPartition("topic-1", 0, 123),
-            TopicPartition("topic-1", 1, 124),
-        ],
-    )
+    consumer._watermark_offsets = {
+        TopicPartition("topic-1", 0): (0, 130),
+        TopicPartition("topic-1", 1): (0, 140),
+    }
+
+    assert _resolve_topic_offsets(consumer, from_start_of_day, now) == {
+        TopicPartition("topic-1", 0): (123, 129),
+        TopicPartition("topic-1", 1): (124, 139),
+    }
 
 
 def test_resolve_topics_offsets():
@@ -1047,6 +1062,7 @@ def test_resolve_topics_offsets():
 
     start_of_day = pd.to_datetime("2021-12-31T00:15:00Z")
     consumer.mock_offset_for_time("topic-1", 0, start_of_day, 123)
+    consumer._watermark_offsets = {TopicPartition("topic-1", 0): (0, 130)}
 
     results = _resolve_topics_offsets(
         consumer,
@@ -1061,13 +1077,7 @@ def test_resolve_topics_offsets():
         pd.to_datetime("2022-01-01", utc=True),
     )
     assert len(results) == 1
-    assert results == [
-        TopicPartition(
-            topic="topic-1",
-            partition=0,
-            offset=123,
-        )
-    ]
+    assert results == {TopicPartition(topic="topic-1", partition=0): (123, 129)}
 
 
 def test_from_relative_time():
@@ -1099,13 +1109,15 @@ def test_from_relative_time():
     consumer.mock_offset_for_time("topic-1", 0, actual_time, 123)
     consumer.mock_offset_for_time("topic-1", 1, actual_time, 124)
 
-    assert_topic_offsets(
-        _resolve_topic_offsets(consumer, source_topic, now),
-        [
-            TopicPartition("topic-1", 0, 123),
-            TopicPartition("topic-1", 1, 124),
-        ],
-    )
+    consumer._watermark_offsets = {
+        TopicPartition("topic-1", 0): (0, 130),
+        TopicPartition("topic-1", 1): (0, 140),
+    }
+
+    assert _resolve_topic_offsets(consumer, source_topic, now) == {
+        TopicPartition("topic-1", 0): (123, 129),
+        TopicPartition("topic-1", 1): (124, 139),
+    }
 
 
 def test_from_absolute_time():
@@ -1137,13 +1149,15 @@ def test_from_absolute_time():
     consumer.mock_offset_for_time("topic-1", 0, start_time, 123)
     consumer.mock_offset_for_time("topic-1", 1, start_time, 124)
 
-    assert_topic_offsets(
-        _resolve_topic_offsets(consumer, source_topic, now),
-        [
-            TopicPartition("topic-1", 0, 123),
-            TopicPartition("topic-1", 1, 124),
-        ],
-    )
+    consumer._watermark_offsets = {
+        TopicPartition("topic-1", 0): (0, 130),
+        TopicPartition("topic-1", 1): (10, 140),
+    }
+
+    assert _resolve_topic_offsets(consumer, source_topic, now) == {
+        TopicPartition("topic-1", 0): (123, 129),
+        TopicPartition("topic-1", 1): (124, 139),
+    }
 
 
 def test_from_earliest():
@@ -1163,14 +1177,15 @@ def test_from_earliest():
             partition_metadata(1),
         ],
     )
+    consumer._watermark_offsets = {
+        TopicPartition("topic-1", 0): (10, 130),
+        TopicPartition("topic-1", 1): (20, 140),
+    }
 
-    assert_topic_offsets(
-        _resolve_topic_offsets(consumer, source_topic, now),
-        [
-            TopicPartition("topic-1", 0, -2),
-            TopicPartition("topic-1", 1, -2),
-        ],
-    )
+    assert _resolve_topic_offsets(consumer, source_topic, now) == {
+        TopicPartition("topic-1", 0): (10, 129),
+        TopicPartition("topic-1", 1): (20, 139),
+    }
 
 
 def test_from_committed():
@@ -1190,14 +1205,20 @@ def test_from_committed():
             partition_metadata(1),
         ],
     )
+    consumer._watermark_offsets = {
+        TopicPartition("topic-1", 0): (0, 130),
+        TopicPartition("topic-1", 1): (10, 140),
+    }
 
-    assert_topic_offsets(
-        _resolve_topic_offsets(consumer, source_topic, now),
-        [
-            TopicPartition("topic-1", 0, confluent_kafka.OFFSET_STORED),
-            TopicPartition("topic-1", 1, confluent_kafka.OFFSET_STORED),
-        ],
-    )
+    consumer._committed = {
+        TopicPartition("topic-1", 0): 100,
+        TopicPartition("topic-1", 1): 110,
+    }
+
+    assert _resolve_topic_offsets(consumer, source_topic, now) == {
+        TopicPartition("topic-1", 0): (100, 129),
+        TopicPartition("topic-1", 1): (110, 139),
+    }
 
 
 def test_no_topic():
@@ -1222,6 +1243,7 @@ def test_no_policy():
         "BAD!",  # type: ignore
     )
     consumer._topics["topic-1"] = topic_metadata("topic-1", [partition_metadata(0)])
+    consumer._watermark_offsets[TopicPartition("topic-1", 0)] = (0, 1)
 
     with pytest.raises(ValueError, match="OffsetPolicy BAD! not supported for topic-1"):
         _resolve_topic_offsets(consumer, source_topic, now)
@@ -1291,17 +1313,15 @@ def test_consumer_manager_create():
         assert consumer_manager._consumer is not None
 
 
-def test_consumer_manager_create_bad():
+def test_consumer_manager_create_partition_eof():
     with mock.patch("confluent_kafka.Consumer", autospec=True):
-        with pytest.raises(
-            ValueError, match=r"'enable.partition.eof' should be set to true"
-        ):
-            _ConsumerManager.create({}, [], 500, timeout=None)
-
-
-def test_kafka_dirver_create():
+        _ConsumerManager.create({}, [], 500, timeout=None)
     with mock.patch("confluent_kafka.Consumer", autospec=True):
-        KafkaDriver.create(Dag(), {}, {"enable.partition.eof": True}, {}, {})
+        _ConsumerManager.create({"enable.partition.eof": True}, [], 500, timeout=None)
+    with mock.patch("confluent_kafka.Consumer", autospec=True):
+        _ConsumerManager.create({"enable.partition.eof": False}, [], 500, timeout=None)
+    with mock.patch("confluent_kafka.Consumer", autospec=True):
+        _ConsumerManager.create({"enable.partition.eof": None}, [], 500, timeout=None)
 
 
 def test_runtime_sink_topic():

@@ -3,6 +3,7 @@
 
 
 import confluent_kafka
+import pandas as pd
 
 # --8<-- [start:dag]
 from beavers import Dag
@@ -41,7 +42,9 @@ def deserialize_messages(messages: list[confluent_kafka.Message]) -> list[str]:
 # --8<-- [start:kafka_source]
 from beavers.kafka import SourceTopic, KafkaDriver
 
-source_topic = SourceTopic.from_latest("words", deserialize_messages)
+source_topic = SourceTopic.from_start_of_day(
+    "words2", deserialize_messages, pd.to_timedelta("15min"), "UTC"
+)
 # --8<-- [end:kafka_source]
 
 
@@ -67,7 +70,6 @@ def serialize_counts(values: list[tuple[str, int]]) -> list[KafkaProducerMessage
 kafka_driver = KafkaDriver.create(
     dag=dag,
     consumer_config={
-        "enable.partition.eof": True,
         "group.id": "beavers",
         "bootstrap.servers": "localhost:9092",
     },
@@ -83,7 +85,7 @@ while True:
 # Note: you can test it with
 # kafka-console-producer --topic words --bootstrap-server=localhost:9092
 # And:
-# kafka-console-consumer
+# kafka-console-consumer \
 #   --topic=counts \
 #   --bootstrap-server=localhost:9092 \
 #   --property print.key=true
