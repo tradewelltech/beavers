@@ -1,10 +1,10 @@
 # Replay
 
-This section explains how you can run a dag using historical data, typically stored in files or databases.
+This section explains how to run a beavers application using historical data, typically stored in files or databases.
 
 ## Manual Replay
 
-Starting with a simple data with one source going to one sink:
+Starting with a simple dag with one source going to one sink:
 
 ```python
 --8<-- "examples/replay_concepts.py:simple_dag"
