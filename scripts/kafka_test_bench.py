@@ -1,5 +1,6 @@
 import functools
 import json
+import logging
 from operator import itemgetter
 from typing import Any, Sequence
 
@@ -72,6 +73,11 @@ def kafka_test_bench(
     producer_config: dict,
     batch_size: int,
 ):
+    logging.basicConfig(
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        level=logging.DEBUG,
+    )
+
     dag = create_test_dag()
 
     driver = KafkaDriver.create(
