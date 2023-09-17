@@ -239,6 +239,7 @@ class ConsumerMetrics:
     paused_partitions: int = 0
     released_message_count: int = 0
     held_message_count: int = 0
+    error_message_count: int = 0
 
 
 class _ConsumerManager:
@@ -291,6 +292,9 @@ class _ConsumerManager:
         )
         self._metrics.consumed_message_count += len(new_messages)
         self._metrics.consumed_message_size += sum(len(m.value()) for m in new_messages)
+        for message in new_messages:
+            if message.error():
+                self._metrics.error_message_count += 1
 
         self._held_messages.extend(new_messages)
         self._held_messages.sort(key=_get_message_ns)

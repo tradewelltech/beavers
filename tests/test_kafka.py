@@ -103,7 +103,7 @@ class MockConsumer:
         return results
 
     def offsets_for_times(
-        self, partitions: list[TopicPartition], timeout: Optional[float]
+        self, partitions: list[TopicPartition], timeout: Optional[float] = None
     ) -> list[TopicPartition]:
         return [self._offsets_for_time[(p, p.offset)] for p in partitions]
 
@@ -117,7 +117,9 @@ class MockConsumer:
     def get_watermark_offsets(self, partition: TopicPartition) -> tuple[int, int]:
         return self._watermark_offsets[partition]
 
-    def committed(self, partitions: list[TopicPartition]):
+    def committed(
+        self, partitions: list[TopicPartition], timeout: Optional[float] = None
+    ):
         return [
             TopicPartition(tp.topic, tp.partition, self._committed[tp])
             for tp in partitions
@@ -547,6 +549,20 @@ def test_kafka_driver_word_count(log_helper: LogHelper):
     assert metrics.serialization_count == 3
     assert metrics.execution_ns > 0
     assert metrics.execution_count == 3
+
+    mock_consumer.extend(
+        [
+            mock_kafka_message(
+                "topic-a",
+                0,
+                error=confluent_kafka.KafkaError(
+                    confluent_kafka.KafkaError.BROKER_NOT_AVAILABLE
+                ),
+            ),
+        ]
+    )
+    assert kafka_driver.run_cycle(0.0) is False
+    assert kafka_driver._consumer_manager.flush_metrics().error_message_count == 1
 
 
 def _timestamp_to_bytes(timestamp: pd.Timestamp) -> bytes:
@@ -1341,3 +1357,8 @@ def test_runtime_sink_topic():
 
     dag.execute()
     assert runtime_sink_topic.serialize(dag.get_cycle_id()) == []
+
+
+def test_coverage():
+    with mock.patch("confluent_kafka.Consumer", autospec=True):
+        KafkaDriver.create(Dag(), {}, {}, {}, {}, 1_000)
