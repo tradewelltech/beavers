@@ -43,7 +43,7 @@ def deserialize_messages(messages: list[confluent_kafka.Message]) -> list[str]:
 from beavers.kafka import SourceTopic, KafkaDriver
 
 source_topic = SourceTopic.from_start_of_day(
-    "words2", deserialize_messages, pd.to_timedelta("15min"), "UTC"
+    "words", deserialize_messages, pd.to_timedelta("15min"), "UTC"
 )
 # --8<-- [end:kafka_source]
 
@@ -82,10 +82,8 @@ while True:
 # --8<-- [end:kafka_driver]
 
 
-# Note: you can test it with
+# Note: you can test it with the following commands
+# kafka-topics --create --topic words --bootstrap-server=localhost:9092
 # kafka-console-producer --topic words --bootstrap-server=localhost:9092
-# And:
-# kafka-console-consumer \
-#   --topic=counts \
-#   --bootstrap-server=localhost:9092 \
+# kafka-console-consumer --topic=counts --bootstrap-server=localhost:9092 \
 #   --property print.key=true
