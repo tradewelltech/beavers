@@ -52,7 +52,7 @@ The `ReplayContext` contains timing information:
 
 A `DataSourceProvider` provides a way of creating `DataSource`.
 
-Assuming the data is stored in a csv file:
+For example, if the data is stored in a csv file:
 
 ```csv
 timestamp,message
@@ -60,7 +60,7 @@ timestamp,message
 2023-01-01 01:01:00+00:00,How are you
 ```
 
-Provided with the `ReplayContext`, it will load the and return a `DataSource`
+Provided with the `ReplayContext`, our `DataSourceProvider` will load the and return a `DataSource`
  
 ```python
 --8<-- "examples/replay_concepts.py:data_source_provider"

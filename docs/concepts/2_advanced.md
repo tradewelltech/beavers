@@ -24,8 +24,8 @@ This section discuss advanced features that control how updates propagate in the
 
 ## Now node
 
-Beavers can be used in both live and replay mode. 
-In replay mode, the wall clock isn't relevant. 
+Beavers can be used in both `live` and `replay` mode. 
+In `replay` mode, the wall clock isn't relevant. 
 To access the current time of the replay, you should use the now node:
 
 ```python
@@ -51,6 +51,8 @@ In this case it's possible to silence them:
 ```python
 --8<-- "examples/advanced_concepts.py:silence"
 ```
+
+`silence` returns a new silenced node (rather than modify the existing node)
 
 ## Value Cutoff
 

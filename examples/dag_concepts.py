@@ -26,7 +26,7 @@ assert my_source_stream.get_value() == [4, 5, 6]
 # --8<-- [end:source_stream_name]
 
 # --8<-- [start:source_stream_empty]
-dict_source_stream = dag.source_stream(empty={})
+dict_source_stream = dag.source_stream(empty_factory=dict)
 dict_source_stream.set_stream({"hello": "world"})
 dag.execute()
 assert dict_source_stream.get_value() == {"hello": "world"}
@@ -55,7 +55,7 @@ assert stream_node.get_value() == []
 
 
 # --8<-- [start:stream_node_empty]
-set_stream_node = dag.stream(set, empty=set()).map(source_stream)
+set_stream_node = dag.stream(set, empty_factory=set).map(source_stream)
 source_stream.set_stream([1, 2, 3, 1, 2, 3])
 dag.execute()
 assert set_stream_node.get_value() == {1, 2, 3}

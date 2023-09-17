@@ -16,6 +16,7 @@ I = typing.TypeVar("I")  # noqa E741
 O = typing.TypeVar("O")  # noqa E741
 
 _STATE_EMPTY = object()
+_VALUE_EMPTY = object()
 _STATE_UNCHANGED = object()
 
 UTC_EPOCH = pd.to_datetime(0, utc=True)
@@ -23,17 +24,17 @@ UTC_MAX = pd.Timestamp.max.tz_localize("UTC")
 
 
 class _SourceStreamFunction(typing.Generic[T]):
-    def __init__(self, empty: T, name: str):
-        self._empty = empty
+    def __init__(self, empty_factory: typing.Callable[[], T], name: str):
+        self._empty_factory = empty_factory
         self._name = name
-        self._value = empty
+        self._value = empty_factory()
 
     def set(self, value: T):
         self._value = value
 
     def __call__(self) -> T:
         result = self._value
-        self._value = self._empty
+        self._value = self._empty_factory()
         return result
 
 
@@ -211,7 +212,7 @@ class Node(typing.Generic[T]):
 
     _function: typing.Optional[typing.Callable[[...], T]]
     _inputs: _NodeInputs = dataclasses.field(repr=False)
-    _empty: typing.Any
+    _empty_factory: typing.Any
     _observers: list[Node] = dataclasses.field(repr=False)
     _runtime_data: _RuntimeNodeData
 
@@ -220,20 +221,23 @@ class Node(typing.Generic[T]):
         value: T = None,
         function: typing.Optional[typing.Callable[[...], T]] = None,
         inputs: _NodeInputs = _NO_INPUTS,
-        empty: typing.Any = _STATE_EMPTY,
+        empty_factory: typing.Any = _STATE_EMPTY,
         notifications: int = 1,
     ) -> Node:
         return Node(
             _function=function,
             _inputs=inputs,
-            _empty=empty,
+            _empty_factory=empty_factory,
             _runtime_data=_RuntimeNodeData(value, notifications, 0),
             _observers=[],
         )
 
     def get_value(self) -> T:
         """Return the value of the output for the last update."""
-        return self._runtime_data.value
+        if self._runtime_data.value is _VALUE_EMPTY:
+            return self._empty_factory()
+        else:
+            return self._runtime_data.value
 
     def get_cycle_id(self) -> int:
         """Return id of the cycle at which this node last updated."""
@@ -261,15 +265,15 @@ class Node(typing.Generic[T]):
             return True
         else:
             if self._is_stream():
-                self._runtime_data.value = self._empty
+                self._runtime_data.value = _VALUE_EMPTY
                 self._runtime_data.notifications = 0
             return False
 
     def _is_stream(self) -> bool:
-        return self._empty is not _STATE_EMPTY
+        return self._empty_factory is not _STATE_EMPTY
 
     def _is_state(self) -> bool:
-        return self._empty is _STATE_EMPTY
+        return self._empty_factory is _STATE_EMPTY
 
     def _should_recalculate(self) -> bool:
         return self._runtime_data.notifications != 0
@@ -374,7 +378,10 @@ class Dag:
         )
 
     def source_stream(
-        self, empty: typing.Optional[T] = None, name: typing.Optional[str] = None
+        self,
+        empty: typing.Optional[T] = None,
+        empty_factory: typing.Optional[typing.Callable[[], T]] = None,
+        name: typing.Optional[str] = None,
     ) -> Node[T]:
         """
         Add a source stream `Node`.
@@ -384,21 +391,24 @@ class Dag:
         empty:
             The value to which the stream reset to when there are no update.
              Must implement `__len__` and be empty
+        empty_factory:
+            A provider for the empty value
+             A callable returning an object that implements `__len__` and is empty
         name:
             The name of the source
 
         """
-        empty = _check_empty(empty)
+        empty_factory = _check_empty(empty, empty_factory)
         existing = self._sources.get(name) if name else None
         if existing is not None:
-            if existing._empty != empty:
+            if existing._empty_factory != empty_factory:
                 raise ValueError(f"Duplicate source: {name}")
             else:
                 return existing
         else:
             node = self._add_stream(
-                function=_SourceStreamFunction(empty, name),
-                empty=empty,
+                function=_SourceStreamFunction(empty_factory, name),
+                empty_factory=empty_factory,
                 inputs=_NO_INPUTS,
             )
             if name:
@@ -406,10 +416,18 @@ class Dag:
             return node
 
     def stream(
-        self, function: typing.Callable[P, T], empty: typing.Optional[T] = None
+        self,
+        function: typing.Callable[P, T],
+        empty: typing.Optional[T] = None,
+        empty_factory: typing.Optional[typing.Callable[[], T]] = None,
     ) -> NodePrototype:
         """
         Add a stream `NodePrototype`.
+
+        Stream nodes are reset to their empty value after each cycle.
+        Therefore, the user must provide an `empty` value or an `empty_factory`
+
+        The default is to use `list` as the `empty_factory`.
 
         Parameters
         ----------
@@ -418,13 +436,16 @@ class Dag:
         empty:
             The value to which the stream reset to when there are no update.
              Must implement `__len__` and be empty
+        empty_factory:
+            A provider for the empty value
+             A callable returning an object that implements `__len__` and is empty
 
         """
-        empty = _check_empty(empty)
+        empty_factory = _check_empty(empty, empty_factory)
         _check_function(function)
 
         def add_to_dag(inputs: _NodeInputs) -> Node:
-            return self._add_stream(function, empty, inputs)
+            return self._add_stream(function, empty_factory, inputs)
 
         return NodePrototype(add_to_dag)
 
@@ -528,7 +549,7 @@ class Dag:
                 function=SilentUpdate,
                 inputs=_NodeInputs.create([node], {}),
                 value=node.get_value(),
-                empty=node._empty,
+                empty_factory=node._empty_factory,
             )
         )
 
@@ -577,12 +598,19 @@ class Dag:
         return results
 
     def _add_stream(
-        self, function: typing.Callable[[...], T], empty: T, inputs: _NodeInputs
+        self,
+        function: typing.Callable[[...], T],
+        empty_factory: typing.Callable[[], T],
+        inputs: _NodeInputs,
     ) -> Node[T]:
         _check_function(function)
-        empty = _check_empty(empty)
         return self._add_node(
-            Node._create(value=empty, function=function, inputs=inputs, empty=empty)
+            Node._create(
+                value=empty_factory(),
+                function=function,
+                inputs=inputs,
+                empty_factory=empty_factory,
+            )
         )
 
     def _flush_timers(self, now: pd.Timestamp) -> int:
@@ -614,15 +642,34 @@ class Dag:
         return node
 
 
-def _check_empty(empty: T) -> T:
-    if empty is None:
-        return []
-    elif not isinstance(empty, collections.abc.Sized):
-        raise TypeError("`empty` should implement `__len__`")
-    elif len(empty) != 0:
-        raise TypeError("`len(empty)` should be 0")
-    else:
-        return empty
+def _check_empty(
+    empty: typing.Optional[T], empty_factory: typing.Optional[typing.Callable[[], T]]
+) -> typing.Callable[[], T]:
+    if empty is not None and empty_factory is not None:
+        raise ValueError(f"Can't provide both {empty=} and {empty_factory=}")
+    elif empty is None and empty_factory is None:
+        return list
+    elif empty is not None:
+        if not isinstance(empty, collections.abc.Sized):
+            raise TypeError("`empty` should implement `__len__`")
+        elif len(empty) != 0:
+            raise TypeError("`len(empty)` should be 0")
+        else:
+            return lambda: empty
+    elif empty_factory is not None:
+        assert empty is None
+        if not callable(empty_factory):
+            raise TypeError(f"{empty_factory=} should be a callable")
+
+        empty_value = empty_factory()
+        if not isinstance(empty_value, collections.abc.Sized):
+            raise TypeError(f"{empty_value=} should implement `__len__`")
+        elif empty_value is None:
+            raise TypeError(f"{empty_factory=} should not return None")
+        elif len(empty_value) != 0:
+            raise TypeError("`len(empty)` should be 0")
+        else:
+            return empty_factory
 
 
 def _check_input(node: Node) -> Node:
