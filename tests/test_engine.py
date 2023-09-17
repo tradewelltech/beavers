@@ -651,6 +651,11 @@ def test_check_empty():
     with pytest.raises(TypeError, match=r"empty_factory=123 should be a callable"):
         _check_empty(None, 123)
 
+    with pytest.raises(TypeError, match=r"should not return None"):
+        _check_empty(empty=None, empty_factory=lambda: None)
+
+    assert _check_empty(empty=None, empty_factory=list) is list
+
 
 def _modify(values: list[int], right: list[int]) -> list[int]:
     values.extend(right)

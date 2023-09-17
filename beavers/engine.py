@@ -656,16 +656,16 @@ def _check_empty(
             raise TypeError("`len(empty)` should be 0")
         else:
             return lambda: empty
-    elif empty_factory is not None:
+    else:
         assert empty is None
         if not callable(empty_factory):
             raise TypeError(f"{empty_factory=} should be a callable")
 
         empty_value = empty_factory()
-        if not isinstance(empty_value, collections.abc.Sized):
-            raise TypeError(f"{empty_value=} should implement `__len__`")
-        elif empty_value is None:
+        if empty_value is None:
             raise TypeError(f"{empty_factory=} should not return None")
+        elif not isinstance(empty_value, collections.abc.Sized):
+            raise TypeError(f"{empty_value=} should implement `__len__`")
         elif len(empty_value) != 0:
             raise TypeError("`len(empty)` should be 0")
         else:
