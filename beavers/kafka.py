@@ -611,7 +611,7 @@ def _resolve_topic_offsets(
             source_topic.absolute_time, consumer, watermarks, timeout
         )
     elif source_topic.offset_policy == OffsetPolicy.COMMITTED:
-        committed = consumer.committed(watermarks.keys())
+        committed = consumer.committed(list(watermarks.keys()), timeout=timeout)
         return {
             confluent_kafka.TopicPartition(topic=tp.topic, partition=tp.partition): (
                 tp.offset,

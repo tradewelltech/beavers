@@ -9,6 +9,7 @@ The "timestamp" of the output messages should be in order across topics when rep
 Helpful commands:
 
 ```shell
+docker run -p 9092:9092 -d bashj79/kafka-kraft
 kafka-topics --create --topic left --bootstrap-server=localhost:9092
 kafka-topics --create --topic right --bootstrap-server=localhost:9092
 kafka-topics --create --topic both --bootstrap-server=localhost:9092
