@@ -31,7 +31,6 @@ black = "^22.10.0"
 coverage = ">=6.5.0"
 flake8 = ">=5.0.4"
 isort = ">=5.10.1"
-mkdocs = ">=1.4.2"
 pip-tools = "^6.12.1"
 pre-commit = ">=2.20.0"
 pylint = ">=2.15.0"
@@ -42,9 +41,9 @@ git-changelog = ">=2.2.0"
 
 [tool.poetry.group.docs.dependencies]
 markdown-include = "*"
-mkdocs = "*"
+mkdocs = ">=1.5.3"
 mkdocs-material-extensions = "*"
-mkdocs-material = ">=9.0.3"
+mkdocs-material = ">=9.3.2"
 mkdocstrings = { version = ">=0.21.2", extras = ["python"] }
 pymdown-extensions = "*"
 
