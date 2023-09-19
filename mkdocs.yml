@@ -38,5 +38,7 @@ markdown_extensions:
   - pymdownx.snippets:
   - pymdownx.emoji
   - pymdownx.highlight
+  - attr_list
+  - md_in_html
 extra:
   project_name: "beavers"
