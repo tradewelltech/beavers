@@ -2,7 +2,7 @@
 # DAG
 
 At its core, `beavers` executes a Directed Acyclic Graph (DAG), where each node is a python function.   
-This section discuss the different type of nodes in the DAG.
+This section discusses the different type of nodes in the DAG.
 
 ## Stream Source
 
@@ -68,7 +68,7 @@ A state node retains its value from one DAG execution to the next, even if it di
 --8<-- "examples/dag_concepts.py:state_node"
 ```
 
-State nodes have an empty value
+Because they retain their value when they are not updated, state nodes don't require an empty value
 
 ## Const Node
 
@@ -77,10 +77,12 @@ A const node is a node whose value doesn't change.
 --8<-- "examples/dag_concepts.py:const_node"
 ```
 
+Const nodes behave like state nodes (their value isn't reset when they don't update).
+
 ## Connecting Nodes (aka `map`)
 
 Nodes are connected by calling the `map` function. 
-Stream nodes can be connected to state nodes, stream nodes or const nodes, and vice versa.
+Any stream or state node can be connected to state nodes, stream nodes or const nodes.
 
 > :warning: The `map` function doesn't execute the underlying node. 
 > Instead it adds a node to the DAG
@@ -99,12 +101,14 @@ Or key word arguments:
 ## State vs Stream
 
 Stream Nodes:
+
 - need their return type to implement `collections.abc.Sized`
 - need an empty value to be specfied (which default to `[]`)
 - have their value reset to empty when they don't update
 - are not considered updated if they return empty
 
 State Nodes:
+
 - Can return any type
 - don't require an empty value
 - retain their value on cycle they don't update

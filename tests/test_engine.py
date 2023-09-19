@@ -12,6 +12,7 @@ from beavers.engine import (
     Dag,
     DagMetrics,
     TimerManager,
+    _check_empty,
     _NodeInputs,
     _unchanged_callback,
 )
@@ -28,9 +29,9 @@ from tests.test_util import (
 
 def test_state_positional():
     dag = Dag()
-    x_source = dag.source_stream([], "x")
+    x_source = dag.source_stream([], name="x")
     x = dag.state(GetLatest(1)).map(x_source)
-    y_source = dag.source_stream([], "y")
+    y_source = dag.source_stream([], name="y")
     y = dag.state(GetLatest(2)).map(y_source)
 
     z = dag.state(add).map(x, y)
@@ -46,9 +47,9 @@ def test_state_positional():
 
 def test_map_state_key_word():
     dag = Dag()
-    x_source = dag.source_stream([], "x")
+    x_source = dag.source_stream([], name="x")
     x = dag.state(GetLatest(1)).map(x_source)
-    y_source = dag.source_stream([], "y")
+    y_source = dag.source_stream([], name="y")
     y = dag.state(GetLatest(2)).map(y_source)
 
     z = dag.state(add).map(left=x, right=y)
@@ -63,9 +64,9 @@ def test_map_state_key_word():
 
 def test_map_positional_and_key_word_not_valid():
     dag = Dag()
-    x_source = dag.source_stream([], "x")
+    x_source = dag.source_stream([], name="x")
     x = dag.state(GetLatest(1)).map(x_source)
-    y_source = dag.source_stream([], "y")
+    y_source = dag.source_stream([], name="y")
     y = dag.state(GetLatest(2)).map(y_source)
 
     dag.state(add).map(x, left=y)
@@ -76,9 +77,9 @@ def test_map_positional_and_key_word_not_valid():
 
 def test_map_runtime_failure():
     dag = Dag()
-    x_source = dag.source_stream([], "x")
+    x_source = dag.source_stream([], name="x")
     x = dag.state(GetLatest(40)).map(x_source)
-    y_source = dag.source_stream([], "y")
+    y_source = dag.source_stream([], name="y")
     y = dag.state(GetLatest(1)).map(y_source)
 
     z = dag.state(add_no_42).map(x, y)
@@ -93,9 +94,9 @@ def test_map_runtime_failure():
 
 def test_using_lambda():
     dag = Dag()
-    x_source = dag.source_stream([], "x")
+    x_source = dag.source_stream([], name="x")
     x = dag.state(GetLatest(40)).map(x_source)
-    y_source = dag.source_stream([], "y")
+    y_source = dag.source_stream([], name="y")
     y = dag.state(GetLatest(41)).map(y_source)
     z = dag.state(add).map(x, y)
 
@@ -108,7 +109,7 @@ def test_using_lambda():
 def test_scalar():
     dag = Dag()
     x = dag.const(40)
-    y_source = dag.source_stream([], "y")
+    y_source = dag.source_stream([], name="y")
     y = dag.state(GetLatest(1)).map(y_source)
     z = dag.state(add).map(x, y)
 
@@ -128,18 +129,18 @@ def test_stream_no_empty():
     dag = Dag()
     source1 = dag.source_stream()
     assert source1.get_value() == []
-    assert source1._empty == []
+    assert source1._empty_factory is list
 
     stream = dag.stream(lambda x: x).map(source1)
     assert stream.get_value() == []
-    assert stream._empty == []
+    assert stream._empty_factory is list
 
 
 def test_stream_to_state():
     dag = Dag()
 
-    hello_stream = dag.source_stream([], "hello")
-    world_stream = dag.source_stream([], "world")
+    hello_stream = dag.source_stream([], name="hello")
+    world_stream = dag.source_stream([], name="world")
 
     hello_count = dag.state(WordCount()).map(hello_stream)
     world_count = dag.state(WordCount()).map(world_stream)
@@ -231,7 +232,7 @@ def test_map_stream_with_async_calls():
 
 def test_time():
     dag = Dag()
-    source = dag.source_stream([], "x")
+    source = dag.source_stream([], name="x")
     add_time = dag.state(lambda x, t: [(v, t) for v in x]).map(source, dag.now())
 
     time0 = pd.to_datetime("2022-09-15", utc=True)
@@ -259,7 +260,7 @@ def test_time():
 
 def test_cutoff_update():
     dag = Dag()
-    x_source = dag.source_stream([], "x")
+    x_source = dag.source_stream([], name="x")
     x = dag.state(GetLatest(1)).map(x_source)
     x_change_only = dag.cutoff(x)
 
@@ -282,7 +283,7 @@ def test_cutoff_update():
 
 def test_cutoff_custom():
     dag = Dag()
-    x_source = dag.source_stream([], "x")
+    x_source = dag.source_stream([], name="x")
     x = dag.state(GetLatest(1)).map(x_source)
     x_change_only = dag.cutoff(x, comparator=lambda x, y: abs(x - y) < 0.1)
 
@@ -316,7 +317,7 @@ def test_cutoff_custom():
 
 def test_cutoff_not_callable():
     dag = Dag()
-    x_source = dag.source_stream([], "x")
+    x_source = dag.source_stream([], name="x")
     x = dag.state(GetLatest(1)).map(x_source)
     with pytest.raises(TypeError, match="`comparator` should be callable"):
         dag.cutoff(x, comparator="not a callable")
@@ -324,7 +325,7 @@ def test_cutoff_not_callable():
 
 def test_silence_state():
     dag = Dag()
-    x_source = dag.source_stream([], "x")
+    x_source = dag.source_stream([], name="x")
     x = dag.state(GetLatest(1)).map(x_source)
     x_silent = dag.silence(x)
 
@@ -345,7 +346,7 @@ def test_silence_state():
 
 def test_silence_stream():
     dag = Dag()
-    x_source = dag.source_stream([], "x")
+    x_source = dag.source_stream([], name="x")
     x_silent = dag.silence(x_source)
 
     x_source.set_stream(["a", "b"])
@@ -435,8 +436,8 @@ def test_timer_manager():
 
 def test_sinks_and_sources():
     dag = Dag()
-    source_1 = dag.source_stream([], "source_1")
-    source_2 = dag.source_stream([], "source_2")
+    source_1 = dag.source_stream([], name="source_1")
+    source_2 = dag.source_stream([], name="source_2")
     both = dag.stream(lambda left, right: left + right, []).map(source_1, source_2)
     sink = dag.sink("sink", both)
 
@@ -464,22 +465,22 @@ def test_sinks_and_sources():
 
 def test_duplicate_source():
     dag = Dag()
-    source_1 = dag.source_stream([], "source")
-    source_2 = dag.source_stream([], "source")
+    source_1 = dag.source_stream(name="source")
+    source_2 = dag.source_stream(name="source")
 
     assert source_1 is source_2
 
 
 def test_duplicate_source_different_empty():
     dag = Dag()
-    dag.source_stream([], "source_1")
+    dag.source_stream([], name="source_1")
     with pytest.raises(ValueError, match=r"Duplicate source: source_1"):
-        dag.source_stream({}, "source_1")
+        dag.source_stream({}, name="source_1")
 
 
 def test_node_with_same_input_positional():
     dag = Dag()
-    source_1 = dag.source_stream([], "source")
+    source_1 = dag.source_stream([], name="source")
     node = dag.stream(lambda a, b: a + b, []).map(source_1, source_1)
     assert node._inputs.positional == (source_1, source_1)
     assert node._inputs.key_word == {}
@@ -488,7 +489,7 @@ def test_node_with_same_input_positional():
 
 def test_node_with_same_input_key_word():
     dag = Dag()
-    source_1 = dag.source_stream([], "source")
+    source_1 = dag.source_stream([], name="source")
     node = dag.stream(lambda a, b: a + b, []).map(a=source_1, b=source_1)
     assert node._inputs.positional == ()
     assert node._inputs.key_word == {"a": source_1, "b": source_1}
@@ -497,7 +498,7 @@ def test_node_with_same_input_key_word():
 
 def test_node_with_same_input_mixed():
     dag = Dag()
-    source_1 = dag.source_stream([], "source")
+    source_1 = dag.source_stream([], name="source")
     node = dag.stream(lambda a, b: a + b, []).map(source_1, b=source_1)
     assert node._inputs.positional == (source_1,)
     assert node._inputs.key_word == {"b": source_1}
@@ -515,7 +516,7 @@ def test_wrong_usage():
 
 def test_add_existing_node():
     dag = Dag()
-    source = dag.source_stream([], "source")
+    source = dag.source_stream([], name="source")
     node = dag.stream(lambda x: x, []).map(source)
     with pytest.raises(ValueError, match="New Node can't have observers"):
         dag._add_node(source)
@@ -526,14 +527,14 @@ def test_add_existing_node():
 def test_mixed_dags():
     dag = Dag()
     other_dag = Dag()
-    other_source = other_dag.source_stream([], "source")
+    other_source = other_dag.source_stream([], name="source")
     with pytest.raises(ValueError, match="Input Node not in dag"):
         dag.stream(lambda x: x, []).map(other_source)
 
 
 def test_get_sink_value_on_other_node():
     dag = Dag()
-    source = dag.source_stream([], "source")
+    source = dag.source_stream([], name="source")
     node = dag.stream(lambda x: x, []).map(source)
     with pytest.raises(TypeError, match="Only _SinkFunction can be read"):
         node.get_sink_value()
@@ -541,7 +542,7 @@ def test_get_sink_value_on_other_node():
 
 def test_node_inputs_kwargs_not_str():
     dag = Dag()
-    source = dag.source_stream([], "source")
+    source = dag.source_stream([], name="source")
     with pytest.raises(TypeError, match="class 'int'"):
         _NodeInputs.create([], {1: source})
 
@@ -598,9 +599,9 @@ def test_unchanged_callback():
 
 def test_metrics():
     dag = Dag()
-    x_source = dag.source_stream([], "x")
+    x_source = dag.source_stream([], name="x")
     x = dag.state(GetLatest(40)).map(x_source)
-    y_source = dag.source_stream([], "y")
+    y_source = dag.source_stream([], name="y")
     y = dag.state(GetLatest(41)).map(y_source)
     z = dag.state(add).map(x, y)
 
@@ -621,3 +622,65 @@ def test_metrics():
     x_source.set_stream([1, 2, 3])
     dag.execute()
     assert dag.flush_metrics() == DagMetrics(4, 4, 1, 8)
+
+
+def test_check_empty():
+    assert _check_empty(None, None) is list
+    empty_list_empty = _check_empty([], None)
+    assert callable(empty_list_empty)
+    assert empty_list_empty() == []
+
+    with pytest.raises(TypeError, match=r"`len\(empty\)` should be 0"):
+        _check_empty([1], None)
+
+    with pytest.raises(TypeError, match=r"`empty` should implement `__len__`"):
+        _check_empty(123, None)
+
+    with pytest.raises(
+        ValueError,
+        match=r"Can't provide both empty=\[\] and empty_factory=",
+    ):
+        _check_empty([], list)
+
+    with pytest.raises(TypeError, match=r"`len\(empty\)` should be 0"):
+        _check_empty(None, lambda: [1])
+
+    with pytest.raises(TypeError, match=r"empty_value=123 should implement `__len__`"):
+        _check_empty(None, lambda: 123)
+
+    with pytest.raises(TypeError, match=r"empty_factory=123 should be a callable"):
+        _check_empty(None, 123)
+
+    with pytest.raises(TypeError, match=r"should not return None"):
+        _check_empty(empty=None, empty_factory=lambda: None)
+
+    assert _check_empty(empty=None, empty_factory=list) is list
+
+
+def _modify(values: list[int], right: list[int]) -> list[int]:
+    values.extend(right)
+    return values
+
+
+def test_mutate_inputs():
+    dag = Dag()
+    source = dag.source_stream()
+    right = dag.source_stream()
+    modifier = dag.stream(_modify).map(source, right)
+    passthrough = dag.stream(lambda x, _: x).map(source, right)
+
+    source.set_stream([1, 2, 3])
+    right.set_stream([4])
+    dag.execute()
+    assert modifier.get_value() == [1, 2, 3, 4]
+    assert passthrough.get_value() == [1, 2, 3, 4]
+
+    dag.execute()
+    assert modifier.get_value() == []  # Not notified
+    assert passthrough.get_value() == []
+
+    right.set_stream([1])
+    dag.execute()
+    assert modifier.get_value() == [1]
+    assert passthrough.get_value() == []  # Notified but got the factory list
+    assert passthrough.get_cycle_id() != dag.get_cycle_id()  # considered not updated

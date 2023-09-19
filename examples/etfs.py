@@ -115,8 +115,8 @@ def get_updated_tickers(
 
 def create_dag() -> Dag:
     dag = Dag()
-    price_stream = dag.source_stream([], "price")
-    etf_composition_stream = dag.source_stream([], "etf_composition")
+    price_stream = dag.source_stream([], name="price")
+    etf_composition_stream = dag.source_stream([], name="etf_composition")
     price_latest = dag.state(GetLatest(attrgetter("ticker"))).map(price_stream)
     etf_composition_latest = dag.state(GetLatest(attrgetter("ticker"))).map(
         etf_composition_stream
