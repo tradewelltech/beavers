@@ -42,3 +42,19 @@ markdown_extensions:
   - md_in_html
 extra:
   project_name: "beavers"
+
+
+nav:
+  - Home:
+    - index.md
+  - Concepts:
+    - concepts/1_dag.md
+    - concepts/2_advanced.md
+    - concepts/3_replay.md
+    - concepts/4_kafka.md
+  - API Reference:
+    - reference/engine.md
+    - reference/kafka.md
+    - reference/replay.md
+  - install.md
+  - development.md
