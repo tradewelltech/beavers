@@ -11,6 +11,7 @@ def test_readme_and_index_same():
         readme_content = fp.read()
 
     with index.open() as fp:
-        index_content = fp.read()
+        # Skip first and last line
+        index_content = "".join(fp.readlines()[1:-1])
 
     assert index_content in readme_content
