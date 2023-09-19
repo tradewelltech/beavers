@@ -16,8 +16,6 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
-KAFKA_EOF_CODE = -191
-
 
 class KafkaMessageDeserializer(Protocol[T]):
     """Interface for converting incoming kafka messages to custom data."""
@@ -224,10 +222,12 @@ class _ProducerManager:
 @dataclasses.dataclass
 class _PartitionInfo:
     current_offset: int
+    live_offset: int
     timestamp_ns: int = UTC_EPOCH.value
     paused: bool = False
-    primed: bool = False
-    eof: bool = False
+
+    def is_live(self) -> bool:
+        return self.current_offset >= self.live_offset
 
 
 @dataclasses.dataclass
@@ -239,13 +239,14 @@ class ConsumerMetrics:
     paused_partitions: int = 0
     released_message_count: int = 0
     held_message_count: int = 0
+    error_message_count: int = 0
 
 
 class _ConsumerManager:
     def __init__(
         self,
         cutoff: pd.Timestamp,
-        partitions: list[confluent_kafka.TopicPartition],
+        partitions: dict[confluent_kafka.TopicPartition : tuple[int, int]],
         consumer: confluent_kafka.Consumer,
         batch_size: int,
         max_held_messages: int,
@@ -253,7 +254,8 @@ class _ConsumerManager:
         self._cutoff_ns: int = cutoff.value
         self._consumer: confluent_kafka.Consumer = consumer
         self._partition_info: dict[confluent_kafka.TopicPartition, _PartitionInfo] = {
-            partition: _PartitionInfo(partition.offset) for partition in partitions
+            tp: _PartitionInfo(current_offset=start, live_offset=end)
+            for tp, (start, end) in partitions.items()
         }
         self._held_messages: list[confluent_kafka.Message] = []
         self._batch_size: int = batch_size
@@ -269,12 +271,17 @@ class _ConsumerManager:
         batch_size: int,
         timeout: Optional[float],
     ) -> "_ConsumerManager":
-        if not consumer_config.get("enable.partition.eof"):
-            raise ValueError("'enable.partition.eof' should be set to true")
         consumer = confluent_kafka.Consumer(consumer_config)
         cutoff = pd.Timestamp.utcnow()
         offsets = _resolve_topics_offsets(consumer, source_topics, cutoff, timeout)
-        consumer.assign(offsets)
+        consumer.assign(
+            [
+                confluent_kafka.TopicPartition(
+                    topic=tp.topic, partition=tp.partition, offset=start
+                )
+                for tp, (start, _) in offsets.items()
+            ]
+        )
         return _ConsumerManager(cutoff, offsets, consumer, batch_size, batch_size * 5)
 
     def poll(self, timeout: float) -> list[confluent_kafka.Message]:
@@ -285,6 +292,9 @@ class _ConsumerManager:
         )
         self._metrics.consumed_message_count += len(new_messages)
         self._metrics.consumed_message_size += sum(len(m.value()) for m in new_messages)
+        for message in new_messages:
+            if message.error():
+                self._metrics.error_message_count += 1
 
         self._held_messages.extend(new_messages)
         self._held_messages.sort(key=_get_message_ns)
@@ -366,20 +376,11 @@ class _ConsumerManager:
             )
             partition_info: _PartitionInfo = self._partition_info[topic_partition]
             timestamp_type, timestamp = message.timestamp()
-            if timestamp_type == confluent_kafka.TIMESTAMP_NOT_AVAILABLE:
-                if (
-                    message.error() is not None
-                    and message.error().code() == KAFKA_EOF_CODE
-                ):
-                    partition_info.eof = True
-            else:
+            if timestamp_type != confluent_kafka.TIMESTAMP_NOT_AVAILABLE:
                 partition_info.timestamp_ns = timestamp * 1_000_000
-                partition_info.eof = False
             partition_info.current_offset = message.offset()
-            if partition_info.timestamp_ns >= self._cutoff_ns:
-                partition_info.primed = True
         self._low_water_mark_ns = min(
-            (v.timestamp_ns for v in self._partition_info.values() if not v.eof),
+            (v.timestamp_ns for v in self._partition_info.values() if not v.is_live()),
             default=pd.Timestamp.utcnow().value,
         )
 
@@ -567,10 +568,10 @@ def _resolve_topics_offsets(
     source_topics: list[SourceTopic],
     now: pd.Timestamp,
     timeout: Optional[float] = None,
-) -> list[confluent_kafka.TopicPartition]:
-    assignments: list[confluent_kafka.TopicPartition] = []
+) -> dict[confluent_kafka.TopicPartition, tuple[int, int]]:
+    assignments = {}
     for source_topic in source_topics:
-        assignments.extend(_resolve_topic_offsets(consumer, source_topic, now, timeout))
+        assignments.update(_resolve_topic_offsets(consumer, source_topic, now, timeout))
     return assignments
 
 
@@ -579,7 +580,7 @@ def _resolve_topic_offsets(
     source_topic: SourceTopic,
     now: pd.Timestamp,
     timeout: Optional[float] = None,
-) -> list[confluent_kafka.TopicPartition]:
+) -> dict[confluent_kafka.TopicPartition, tuple[int, int]]:
     cluster_metadata: confluent_kafka.admin.ClusterMetadata = consumer.list_topics(
         source_topic.name, timeout
     )
@@ -588,71 +589,40 @@ def _resolve_topic_offsets(
     ]
     if len(topic_meta_data.partitions) == 0:
         raise ValueError(f"Topic {source_topic.name} does not exist")
+    watermarks = {
+        confluent_kafka.TopicPartition(
+            source_topic.name, p.id
+        ): consumer.get_watermark_offsets(
+            confluent_kafka.TopicPartition(source_topic.name, p.id)
+        )
+        for p in topic_meta_data.partitions.values()
+    }
 
     if source_topic.offset_policy == OffsetPolicy.LATEST:
-        return [
-            confluent_kafka.TopicPartition(
-                topic=source_topic.name,
-                partition=p.id,
-                offset=confluent_kafka.OFFSET_END,
-            )
-            for p in topic_meta_data.partitions.values()
-        ]
+        return {tp: (end, end - 1) for tp, (start, end) in watermarks.items()}
     elif source_topic.offset_policy == OffsetPolicy.EARLIEST:
-        return [
-            confluent_kafka.TopicPartition(
-                topic=source_topic.name,
-                partition=p.id,
-                offset=confluent_kafka.OFFSET_BEGINNING,
-            )
-            for p in topic_meta_data.partitions.values()
-        ]
+        return {tp: (start, end - 1) for tp, (start, end) in watermarks.items()}
     elif source_topic.offset_policy == OffsetPolicy.RELATIVE_TIME:
         offset_timestamp = now - source_topic.relative_time
-        offset_ms = offset_timestamp.value // 1_000_000
-        return consumer.offsets_for_times(
-            [
-                confluent_kafka.TopicPartition(
-                    topic=source_topic.name, partition=p.id, offset=offset_ms
-                )
-                for p in topic_meta_data.partitions.values()
-            ],
-            timeout,
-        )
+        return _resolve_offset_for_time(offset_timestamp, consumer, watermarks, timeout)
     elif source_topic.offset_policy == OffsetPolicy.START_OF_DAY:
         offset_timestamp = _get_previous_start_of_day(
             now, source_topic.start_of_day_time, source_topic.start_of_day_timezone
         )
-        offset_ms = offset_timestamp.value // 1_000_000
-        return consumer.offsets_for_times(
-            [
-                confluent_kafka.TopicPartition(
-                    topic=source_topic.name, partition=p.id, offset=offset_ms
-                )
-                for p in topic_meta_data.partitions.values()
-            ],
-            timeout,
-        )
+        return _resolve_offset_for_time(offset_timestamp, consumer, watermarks, timeout)
     elif source_topic.offset_policy == OffsetPolicy.ABSOLUTE_TIME:
-        offset_ms = source_topic.absolute_time.value // 1_000_000
-        return consumer.offsets_for_times(
-            [
-                confluent_kafka.TopicPartition(
-                    topic=source_topic.name, partition=p.id, offset=offset_ms
-                )
-                for p in topic_meta_data.partitions.values()
-            ],
-            timeout,
+        return _resolve_offset_for_time(
+            source_topic.absolute_time, consumer, watermarks, timeout
         )
     elif source_topic.offset_policy == OffsetPolicy.COMMITTED:
-        return [
-            confluent_kafka.TopicPartition(
-                topic=source_topic.name,
-                partition=p.id,
-                offset=confluent_kafka.OFFSET_STORED,
+        committed = consumer.committed(list(watermarks.keys()), timeout=timeout)
+        return {
+            confluent_kafka.TopicPartition(topic=tp.topic, partition=tp.partition): (
+                tp.offset,
+                watermarks[tp][1] - 1,
             )
-            for p in topic_meta_data.partitions.values()
-        ]
+            for tp in committed
+        }
     else:
         raise ValueError(
             f"{OffsetPolicy.__name__} {source_topic.offset_policy}"
@@ -694,3 +664,28 @@ def _get_message_ns(message: confluent_kafka.Message) -> int:
         return UTC_MAX.value
     else:
         return timestamp * 1_000_000
+
+
+def _resolve_offset_for_time(
+    offset_timestamp: pd.Timestamp,
+    consumer: confluent_kafka.Consumer,
+    watermarks: dict[confluent_kafka.TopicPartition, tuple[int, int]],
+    timeout: float,
+) -> dict[confluent_kafka.TopicPartition, tuple[int, int]]:
+    offset_ms = offset_timestamp.value // 1_000_000
+    offset_for_time = consumer.offsets_for_times(
+        [
+            confluent_kafka.TopicPartition(
+                topic=tp.topic, partition=tp.partition, offset=offset_ms
+            )
+            for tp in watermarks.keys()
+        ],
+        timeout,
+    )
+    return {
+        confluent_kafka.TopicPartition(topic=tp.topic, partition=tp.partition): (
+            tp.offset,
+            watermarks[tp][1] - 1,
+        )
+        for tp in offset_for_time
+    }
