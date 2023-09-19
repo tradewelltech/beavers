@@ -6,13 +6,24 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 <!-- insertion marker -->
-## [v0.2.0](https://github.com/tradewelltech/beavers/releases/tag/v0.2.0) - 2023-09-17
+## [v0.2.0](https://github.com/tradewelltech/beavers/releases/tag/v0.2.0) - 2023-09-19
 
 <small>[Compare with v0.1.0](https://github.com/tradewelltech/beavers/compare/v0.1.0...v0.2.0)</small>
 
 ### Added
 
+- Add changelog ([7ee7685](https://github.com/tradewelltech/beavers/commit/7ee76853ff4186dc1b7c9449022511a6ad477fbe) by aandres).
+- Add empty factory ([ee07562](https://github.com/tradewelltech/beavers/commit/ee0756289d4ed79787e760de4441933afd1aa9d7) by aandres).
+- Add offset policies, fix committed ([99c1ad7](https://github.com/tradewelltech/beavers/commit/99c1ad76f6d49f4a641749bdea5ec60e73392507) by aandres).
+- Add logging ([c8449ab](https://github.com/tradewelltech/beavers/commit/c8449aba69d18ec070755e1efbd89f083b639289) by aandres).
+- Add test script ([077bfc2](https://github.com/tradewelltech/beavers/commit/077bfc278809676e048ba121119e1ec67a97bb5f) by aandres).
 - Add kafka doc ([806a471](https://github.com/tradewelltech/beavers/commit/806a47188fa4b2c7234f3059975668142fb3c49b) by aandres).
+
+### Fixed
+
+- Fix test, fix coverage ([6f0e371](https://github.com/tradewelltech/beavers/commit/6f0e371916c2ba61147f61adfd5995c32fe63212) by aandres).
+- Fix covertage ([9db6eec](https://github.com/tradewelltech/beavers/commit/9db6eec070d4e7783bc6028f85ad468b0b26e7c8) by aandres).
+- Fix example ([39f4b44](https://github.com/tradewelltech/beavers/commit/39f4b44f48b2b5efe2761f762e7d85ee256df76d) by aandres).
 
 ## [v0.1.0](https://github.com/tradewelltech/beavers/releases/tag/v0.1.0) - 2023-08-24
 
