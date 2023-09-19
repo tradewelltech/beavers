@@ -255,7 +255,7 @@ def test_replay_read_sources():
     )
 
     dag = Dag()
-    dag.source_stream([], "hello")
+    dag.source_stream([], name="hello")
     driver = ReplayDriver.create(
         dag=dag,
         replay_context=ReplayContext(
@@ -284,7 +284,7 @@ def test_replay_run_cycle():
     )
 
     dag = Dag()
-    dag.source_stream([], "hello")
+    dag.source_stream([], name="hello")
     driver = ReplayDriver.create(
         dag=dag,
         replay_context=ReplayContext(

@@ -571,7 +571,7 @@ def _timestamp_to_bytes(timestamp: pd.Timestamp) -> bytes:
 
 def test_kafka_driver_timer():
     dag = Dag()
-    messages_stream = dag.source_stream([], "messages")
+    messages_stream = dag.source_stream([], name="messages")
     timestamp_stream = dag.stream(
         lambda x: [TimerEntry(pd.to_datetime(v), [1, 2, 3]) for v in x if v], []
     ).map(messages_stream)

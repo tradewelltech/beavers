@@ -95,7 +95,7 @@ class SetATimer:
 
 def create_word_count_dag() -> tuple[Dag, WordCount]:
     dag = Dag()
-    messages_stream = dag.source_stream([], "messages")
+    messages_stream = dag.source_stream([], name="messages")
     word_count = WordCount()
     state = dag.state(word_count).map(messages_stream)
     changed_key = dag.stream(lambda x: sorted(set(x)), []).map(messages_stream)
