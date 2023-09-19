@@ -40,6 +40,7 @@ click = ">=8.1.7"
 mkdocs-material = ">=9.0.3"
 mkdocstrings = { version = ">=0.21.2", extras = ['python'] }
 mock = "*"
+git-changelog = "^2.2.0"
 
 [tool.poetry.group.docs.dependencies]
 markdown-include = "*"
