@@ -77,3 +77,10 @@ line-length = 88
 
 [tool.pydocstyle]
 ignore = ["D102", "D107", "D203", "D212"]
+
+[tool.poetry.extras]
+pyarrow = ["pyarrow"]
+
+[tool.coverage.report]
+# https://github.com/nedbat/coveragepy/issues/831#issuecomment-517778185
+exclude_lines = [ "if TYPE_CHECKING:" ]
