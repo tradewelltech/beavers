@@ -55,7 +55,8 @@ nav:
     - concepts/5_pyarrow.md
   - API Reference:
     - reference/engine.md
-    - reference/kafka.md
     - reference/replay.md
+    - reference/kafka.md
+    - reference/arrow.md
   - install.md
   - development.md
