@@ -3,7 +3,7 @@ import pyarrow.compute as pc
 import pytest
 
 from beavers import Dag
-from beavers.arrow import _get_latest, _LatestTracker
+from beavers.arrow import _concat_arrow_arrays, _get_latest, _LatestTracker
 
 SIMPLE_SCHEMA = pa.schema(
     [
@@ -173,3 +173,93 @@ def test_latest_by_keys_bad():
         TypeError, match=r"field colz no in schema: \['col1', 'col2', 'col3'\]"
     ):
         dag.pa.latest_by_keys(source, ["colz"])
+
+
+def test_get_column():
+    dag = Dag()
+    source = dag.pa.source_stream(SIMPLE_SCHEMA)
+    array = dag.pa.get_column(source, "col1")
+
+    dag.execute()
+    assert array.get_value() == pa.chunked_array([pa.array([], pa.int32())])
+
+    source.set_stream(SIMPLE_TABLE)
+    dag.execute()
+    assert array.get_value() == SIMPLE_TABLE["col1"]
+
+    dag.execute()
+    assert array.get_value() == pa.chunked_array([pa.array([], pa.int32())])
+
+    source.set_stream(SIMPLE_TABLE_2)
+    dag.execute()
+    assert array.get_value() == SIMPLE_TABLE_2["col1"]
+
+
+def test_get_column_bad():
+    dag = Dag()
+
+    with pytest.raises(TypeError, match=r"Argument should be a Node"):
+        dag.pa.get_column("Not a node", "col1")
+    with pytest.raises(TypeError, match=r"Argument should be a Node\[pa.Table\]"):
+        dag.pa.get_column(dag.source_stream(), "col1")
+    with pytest.raises(TypeError, match=r"Argument should be a stream Node"):
+        dag.pa.get_column(dag.state(lambda: None).map(), "col1")
+
+    source = dag.pa.source_stream(SIMPLE_SCHEMA)
+
+    with pytest.raises(TypeError, match="123"):
+        dag.pa.get_column(source, 123)
+    with pytest.raises(
+        TypeError, match=r"field colz no in schema: \['col1', 'col2', 'col3'\]"
+    ):
+        dag.pa.get_column(source, "colz")
+
+
+def test_concat_arrays_ok():
+    dag = Dag()
+    left = dag.source_stream(empty=pa.array([], pa.string()))
+    right = dag.source_stream(empty=pa.array([], pa.string()))
+    both = dag.pa.concat_arrays(left, right)
+
+    dag.execute()
+    assert both.get_value() == pa.chunked_array([], pa.string())
+
+    left.set_stream(pa.array(["a", "b"]))
+    right.set_stream(pa.array(["c"]))
+    dag.execute()
+    assert both.get_value() == pa.chunked_array(["a", "b", "c"], pa.string())
+
+    dag.execute()
+    assert both.get_value() == pa.chunked_array([], pa.string())
+
+
+def test_concat_arrays_bad():
+    dag = Dag()
+
+    with pytest.raises(ValueError, match=r"Must pass at least one array"):
+        dag.pa.concat_arrays()
+    with pytest.raises(TypeError, match=r"Argument should be a Node"):
+        dag.pa.concat_arrays(123)
+    with pytest.raises(TypeError, match=r"Argument should be a stream Node"):
+        dag.pa.concat_arrays(dag.state(lambda: None).map())
+    with pytest.raises(TypeError, match=r"Argument should be a Node\[pa\.Array\]"):
+        dag.pa.concat_arrays(dag.source_stream())
+    with pytest.raises(TypeError, match=r"Array type mismatch string vs int32"):
+        dag.pa.concat_arrays(
+            dag.source_stream(empty=pa.array([], pa.string())),
+            dag.source_stream(empty=pa.array([], pa.int32())),
+        )
+
+
+def test_concat_arrow_arrays_mixed():
+    assert _concat_arrow_arrays(
+        [
+            pa.array([], pa.string()),
+            pa.chunked_array(pa.array([], pa.string())),
+        ]
+    ) == pa.chunked_array([], pa.string())
+
+
+def test_concat_arrow_arrays_bad():
+    with pytest.raises(TypeError, match="123"):
+        _concat_arrow_arrays([123])

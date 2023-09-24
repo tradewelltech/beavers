@@ -52,6 +52,7 @@ nav:
     - concepts/2_advanced.md
     - concepts/3_replay.md
     - concepts/4_kafka.md
+    - concepts/5_pyarrow.md
   - API Reference:
     - reference/engine.md
     - reference/kafka.md
