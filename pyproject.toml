@@ -25,6 +25,7 @@ keywords = ["apache-arrow", "streaming", "data"]
 pandas = ">1.4.0"
 confluent_kafka = ">=2.1.1"
 python = ">=3.10,<3.12"
+pyarrow = ">=12.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.10.0"
@@ -38,6 +39,7 @@ pytest = ">=7.2.0"
 click = ">=8.1.7"
 mock = "*"
 git-changelog = ">=2.2.0"
+tabulate = "*"
 
 [tool.poetry.group.docs.dependencies]
 markdown-include = "*"
@@ -77,3 +79,11 @@ line-length = 88
 
 [tool.pydocstyle]
 ignore = ["D102", "D107", "D203", "D212"]
+
+[tool.poetry.extras]
+pyarrow = ["pyarrow"]
+confluent_kafka = ["confluent_kafka"]
+
+[tool.coverage.report]
+# https://github.com/nedbat/coveragepy/issues/831#issuecomment-517778185
+exclude_lines = [ "if TYPE_CHECKING:" ]
