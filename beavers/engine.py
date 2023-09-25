@@ -4,16 +4,32 @@ from __future__ import annotations
 import collections.abc
 import dataclasses
 import operator
-import typing
 from collections import defaultdict
+from functools import cached_property
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Generic,
+    Optional,
+    ParamSpec,
+    Sequence,
+    TypeVar,
+)
+
+if TYPE_CHECKING:
+    try:
+        from beavers.arrow import ArrowDagWrapper
+    except ImportError:
+        ArrowDagWrapper = None
 
 import pandas as pd
 
-P = typing.ParamSpec("P")
+P = ParamSpec("P")
 
-T = typing.TypeVar("T")
-I = typing.TypeVar("I")  # noqa E741
-O = typing.TypeVar("O")  # noqa E741
+T = TypeVar("T")
+I = TypeVar("I")  # noqa E741
+O = TypeVar("O")  # noqa E741
 
 _STATE_EMPTY = object()
 _VALUE_EMPTY = object()
@@ -23,8 +39,8 @@ UTC_EPOCH = pd.to_datetime(0, utc=True)
 UTC_MAX = pd.Timestamp.max.tz_localize("UTC")
 
 
-class _SourceStreamFunction(typing.Generic[T]):
-    def __init__(self, empty_factory: typing.Callable[[], T], name: str):
+class _SourceStreamFunction(Generic[T]):
+    def __init__(self, empty_factory: Callable[[], T], name: str):
         self._empty_factory = empty_factory
         self._name = name
         self._value = empty_factory()
@@ -38,12 +54,12 @@ class _SourceStreamFunction(typing.Generic[T]):
         return result
 
 
-class _SinkFunction(typing.Generic[T]):
+class _SinkFunction(Generic[T]):
     def __init__(self, name: str):
         self._name = name
-        self._value: typing.Optional[T] = None
+        self._value: Optional[T] = None
 
-    def get(self) -> typing.Optional[T]:
+    def get(self) -> Optional[T]:
         return self._value
 
     def __call__(self, value: T) -> None:
@@ -51,8 +67,8 @@ class _SinkFunction(typing.Generic[T]):
         return None
 
 
-class _ValueCutOff(typing.Generic[T]):
-    def __init__(self, comparator: typing.Callable[[T, T], bool] = operator.eq):
+class _ValueCutOff(Generic[T]):
+    def __init__(self, comparator: Callable[[T, T], bool] = operator.eq):
         self._value = _STATE_EMPTY
         self._comparator = comparator
 
@@ -127,7 +143,7 @@ class _TimerManagerFunction:
 
 
 @dataclasses.dataclass(frozen=True)
-class SilentUpdate(typing.Generic[T]):
+class SilentUpdate(Generic[T]):
     """
     Wrap a value to make the update silent.
 
@@ -137,7 +153,7 @@ class SilentUpdate(typing.Generic[T]):
     value: T
 
 
-class _SourceState(typing.Generic[T]):
+class _SourceState(Generic[T]):
     def __init__(self, value: T):
         self._value = value
 
@@ -152,14 +168,12 @@ class _SourceState(typing.Generic[T]):
 class _NodeInputs:
     """Internal representation of a node inputs."""
 
-    positional: typing.Tuple[Node]
-    key_word: typing.Dict[str, Node]
-    nodes: typing.Tuple[Node]
+    positional: tuple[Node]
+    key_word: dict[str, Node]
+    nodes: tuple[Node]
 
     @staticmethod
-    def create(
-        positional: typing.Sequence[Node], key_word: typing.Dict[str, Node]
-    ) -> "_NodeInputs":
+    def create(positional: Sequence[Node], key_word: dict[str, Node]) -> "_NodeInputs":
         all_nodes = []
         for node in positional:
             _check_input(node)
@@ -178,7 +192,7 @@ class _NodeInputs:
             nodes=tuple(all_nodes),
         )
 
-    def input_nodes(self) -> typing.Tuple[Node]:
+    def input_nodes(self) -> tuple[Node]:
         return self.nodes
 
 
@@ -186,16 +200,16 @@ _NO_INPUTS = _NodeInputs.create([], {})
 
 
 @dataclasses.dataclass
-class _RuntimeNodeData(typing.Generic[T]):
+class _RuntimeNodeData(Generic[T]):
     """Stores mutable information about a node state."""
 
-    value: typing.Optional[T]
+    value: Optional[T]
     notifications: int
     cycle_id: int
 
 
 @dataclasses.dataclass(frozen=True, eq=False)
-class Node(typing.Generic[T]):
+class Node(Generic[T]):
     """
     Represent an element in a `Dag`.
 
@@ -210,18 +224,18 @@ class Node(typing.Generic[T]):
     You shouldn't use them directly to read values (use sink for this)
     """
 
-    _function: typing.Optional[typing.Callable[[...], T]]
+    _function: Optional[Callable[[...], T]]
     _inputs: _NodeInputs = dataclasses.field(repr=False)
-    _empty_factory: typing.Any
+    _empty_factory: Any
     _observers: list[Node] = dataclasses.field(repr=False)
     _runtime_data: _RuntimeNodeData
 
     @staticmethod
     def _create(
         value: T = None,
-        function: typing.Optional[typing.Callable[[...], T]] = None,
+        function: Optional[Callable[[...], T]] = None,
         inputs: _NodeInputs = _NO_INPUTS,
-        empty_factory: typing.Any = _STATE_EMPTY,
+        empty_factory: Any = _STATE_EMPTY,
         notifications: int = 1,
     ) -> Node:
         return Node(
@@ -250,7 +264,7 @@ class Node(typing.Generic[T]):
         self._function.set(value)
         self._stain()
 
-    def get_sink_value(self) -> typing.Any:
+    def get_sink_value(self) -> Any:
         """Return the value of a `_SinkFunction`."""
         if not isinstance(self._function, _SinkFunction):
             raise TypeError(f"Only {_SinkFunction.__name__} can be read")
@@ -318,10 +332,10 @@ class Node(typing.Generic[T]):
 
 
 @dataclasses.dataclass(frozen=True)
-class NodePrototype(typing.Generic[T]):
+class NodePrototype(Generic[T]):
     """A `Node` that is yet to be added to the `Dag`."""
 
-    _add_to_dag: typing.Callable[[_NodeInputs], Node[T]]
+    _add_to_dag: Callable[[_NodeInputs], Node[T]]
 
     def map(self, *args: Node, **kwargs: Node) -> Node[T]:
         """Add the prototype to the dag and connect it to the given inputs."""
@@ -379,9 +393,9 @@ class Dag:
 
     def source_stream(
         self,
-        empty: typing.Optional[T] = None,
-        empty_factory: typing.Optional[typing.Callable[[], T]] = None,
-        name: typing.Optional[str] = None,
+        empty: Optional[T] = None,
+        empty_factory: Optional[Callable[[], T]] = None,
+        name: Optional[str] = None,
     ) -> Node[T]:
         """
         Add a source stream `Node`.
@@ -417,9 +431,9 @@ class Dag:
 
     def stream(
         self,
-        function: typing.Callable[P, T],
-        empty: typing.Optional[T] = None,
-        empty_factory: typing.Optional[typing.Callable[[], T]] = None,
+        function: Callable[P, T],
+        empty: Optional[T] = None,
+        empty_factory: Optional[Callable[[], T]] = None,
     ) -> NodePrototype:
         """
         Add a stream `NodePrototype`.
@@ -449,7 +463,7 @@ class Dag:
 
         return NodePrototype(add_to_dag)
 
-    def state(self, function: typing.Callable[P, T]) -> NodePrototype[T]:
+    def state(self, function: Callable[P, T]) -> NodePrototype[T]:
         """
         Add a state `NodePrototype`.
 
@@ -518,7 +532,7 @@ class Dag:
         return node
 
     def cutoff(
-        self, node: Node[T], comparator: typing.Callable[[T, T], bool] = operator.eq
+        self, node: Node[T], comparator: Callable[[T, T], bool] = operator.eq
     ) -> Node[T]:
         """
         Tame the update from a `Node`, given a "cutoff" policy.
@@ -576,7 +590,7 @@ class Dag:
         """Return the last cycle id."""
         return self._cycle_id
 
-    def execute(self, timestamp: typing.Optional[pd.Timestamp] = None):
+    def execute(self, timestamp: Optional[pd.Timestamp] = None):
         """Run the dag for a given timestamp."""
         self._cycle_id += 1
         if timestamp is not None:
@@ -597,10 +611,18 @@ class Dag:
         self._metrics = DagMetrics(node_count=len(self._nodes))
         return results
 
+    @cached_property
+    def pa(self) -> "ArrowDagWrapper":
+        """Returns the ArrowDagWrapper."""
+        # Import dynamically because of circular dependency
+        from beavers.arrow import ArrowDagWrapper
+
+        return ArrowDagWrapper(self)
+
     def _add_stream(
         self,
-        function: typing.Callable[[...], T],
-        empty_factory: typing.Callable[[], T],
+        function: Callable[[...], T],
+        empty_factory: Callable[[], T],
         inputs: _NodeInputs,
     ) -> Node[T]:
         _check_function(function)
@@ -623,9 +645,7 @@ class Dag:
 
         return count
 
-    def _add_state(
-        self, function: typing.Callable[[...], T], inputs: _NodeInputs
-    ) -> Node[T]:
+    def _add_state(self, function: Callable[[...], T], inputs: _NodeInputs) -> Node[T]:
         _check_function(function)
         return self._add_node(Node._create(function=function, inputs=inputs))
 
@@ -643,8 +663,8 @@ class Dag:
 
 
 def _check_empty(
-    empty: typing.Optional[T], empty_factory: typing.Optional[typing.Callable[[], T]]
-) -> typing.Callable[[], T]:
+    empty: Optional[T], empty_factory: Optional[Callable[[], T]]
+) -> Callable[[], T]:
     if empty is not None and empty_factory is not None:
         raise ValueError(f"Can't provide both {empty=} and {empty_factory=}")
     elif empty is None and empty_factory is None:
@@ -679,9 +699,7 @@ def _check_input(node: Node) -> Node:
         return node
 
 
-def _check_function(
-    function: typing.Callable[typing.ParamSpec, T]
-) -> typing.Callable[typing.ParamSpec, T]:
+def _check_function(function: Callable[ParamSpec, T]) -> Callable[ParamSpec, T]:
     if not callable(function):
         raise TypeError("`function` should be a callable")
     else:

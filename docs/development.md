@@ -21,7 +21,7 @@ pytest -n auto tests
 
 To Get coverage:
 ```shell
-coverage run --branch --include "./beavers/*" -m pytest tests
+coverage run --branch --rcfile=./pyproject.toml --include "./beavers/*" -m pytest tests
 coverage report --show-missing
 ```
 

@@ -5,7 +5,7 @@ repos:
     rev: 6.3.0
     hooks:
       - id: pydocstyle
-        files: ^beavers/(engine|replay|kafka).py
+        files: ^beavers/(engine|replay|kafka|arrow).py
         additional_dependencies:
           - tomli
 
