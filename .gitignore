@@ -163,7 +163,6 @@ cython_debug/
 /.idea
 /.pytest_cache
 /.ruff_cache
-/poetry.lock
 /venv
 *.csv
 coverrage.xml

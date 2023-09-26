@@ -59,9 +59,9 @@ def _get_stream_node_empy(node: Node) -> Any:
         return node._empty_factory()
 
 
-def _check_array(node: Node[pa.Array]) -> pa.DataType:
+def _check_array(node: Node[pa.Array | pa.ChunkedArray]) -> pa.DataType:
     empty = _get_stream_node_empy(node)
-    if not isinstance(empty, pa.Array):
+    if not isinstance(empty, (pa.Array, pa.ChunkedArray)):
         raise TypeError(f"Argument should be a {Node.__name__}[pa.Array]")
     else:
         return empty.type

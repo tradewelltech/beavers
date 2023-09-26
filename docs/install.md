@@ -8,8 +8,8 @@ pip install beavers
 
 ## Extras
 
-To install with pyarrow:
+To install with extras like Arrow and Kafka:
 
 ```sh
-pip install beavers[pyarrow]
+pip install beavers[pyarrow, confluent_kafka]
 ```

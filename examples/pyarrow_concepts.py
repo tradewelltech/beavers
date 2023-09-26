@@ -23,7 +23,7 @@ price_table = pa.Table.from_pylist(
 )
 # --8<-- [end:business_logic_price]
 
-print(price_table.to_pandas().to_markdown(index=False))
+# print(price_table.to_pandas().to_markdown(index=False))
 
 # --8<-- [start:business_logic_composition]
 ETF_COMPOSITION_SCHEMA = pa.schema(
@@ -47,7 +47,7 @@ etf_composition_table = pa.Table.from_pylist(
 )
 # --8<-- [end:business_logic_composition]
 
-print(etf_composition_table.to_pandas().to_markdown(index=False, floatfmt=".1f"))
+# print(etf_composition_table.to_pandas().to_markdown(index=False, floatfmt=".1f"))
 
 
 # --8<-- [start:business_logic_calculation]
@@ -80,7 +80,7 @@ etf_value_table = calculate_etf_value(
 # --8<-- [end:business_logic_calculation]
 
 
-print(etf_value_table.to_pandas().to_markdown(index=False, floatfmt=".2f"))
+# print(etf_value_table.to_pandas().to_markdown(index=False, floatfmt=".2f"))
 
 # --8<-- [start:dag_source]
 from beavers import Dag
@@ -190,4 +190,4 @@ dag.execute()
 assert len(updated_etf.get_value()) == 1
 # --8<-- [end:update_all_test]
 
-print(updated_etf.get_value().to_pandas().to_markdown(index=False))
+# print(updated_etf.get_value().to_pandas().to_markdown(index=False))

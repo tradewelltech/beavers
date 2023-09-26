@@ -58,7 +58,7 @@ Then we keep track of the latest value for each source stream:
 --8<-- "examples/pyarrow_concepts.py:dag_state"
 ```
 
-Lastly we put together the prices and etf composition state:
+Lastly we put together the prices and ETF composition state:
 ```python
 --8<-- "examples/pyarrow_concepts.py:dag_calculation"
 ```
@@ -72,7 +72,7 @@ And that's it:
 
 ## Taming updates
 
-This dag does the job of calculating the etf value in real time.
+This dag does the job of calculating the ETF value in real time.
 But there is one issue.
 The value of every ETFs would update every time either the `price` or the `etf_composition` source update.
 Even if the updates comes on a ticker that is not relevant to the ETFs we are tracking. 

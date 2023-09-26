@@ -48,11 +48,11 @@ nav:
   - Home:
     - index.md
   - Concepts:
-    - concepts/1_dag.md
-    - concepts/2_advanced.md
-    - concepts/3_replay.md
-    - concepts/4_kafka.md
-    - concepts/5_pyarrow.md
+    - concepts/dag.md
+    - concepts/advanced.md
+    - concepts/replay.md
+    - concepts/kafka.md
+    - concepts/pyarrow.md
   - API Reference:
     - reference/engine.md
     - reference/replay.md
@@ -60,3 +60,4 @@ nav:
     - reference/arrow.md
   - install.md
   - development.md
+  - faq.md
