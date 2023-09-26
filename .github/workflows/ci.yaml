@@ -21,11 +21,13 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+          cache: "pip"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install tox tox-gh-actions
+          python -m pip install tox tox-gh-actions poetry
+          poetry self add "poetry-dynamic-versioning[plugin]"
 
       - name: Run tox
         run: tox
