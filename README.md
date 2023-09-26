@@ -21,7 +21,7 @@ in both realtime and batch jobs.
 ## Key Features
 
 - Works in **real time** (eg: reading from kafka) and **replay mode** (eg: reading from parquet)
-- Optimized for analytics, it uses micro-batching (instead of processing records one by one)
+- Optimized for analytics, using micro-batches (instead of processing records one by one)
 - Similar to [incremental][3], it  updates nodes in a dag incrementally
 - Taking inspiration from [kafka streams][4], there are two types of nodes in the dag:
     * **Stream**: ephemeral micro-batches of events (cleared after every cycle)
@@ -29,6 +29,10 @@ in both realtime and batch jobs.
 - Clear separation between the business logic and the IO. 
   So the same dag can be used in real time mode, replay mode or can be easily tested.
 - Functional interface: no inheritance or decorator required
+- Support for complicated joins, not just "linear" data flow 
+- No concurrency support. To speed up calculation use libraries like pandas, pyarrow or polars
+- No async code. To speed up IO use kafka driver native thread or parquet IO thread pool
+- No support for state persistency. Instead of saving state, replay historic data from kafka to prime stateful nodes. 
 
 [1]: https://github.com/tradewelltech/beavers
 [2]: https://www.tradewelltech.co/
