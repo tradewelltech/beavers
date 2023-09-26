@@ -46,7 +46,7 @@ for both realtime and batch jobs.
 [2]: https://www.tradewelltech.co/
 [3]: https://github.com/janestreet/incremental
 [4]: https://www.confluent.io/blog/kafka-streams-tables-part-1-event-streaming/
-[5]: ./static/icons/beavers/logo.svg
+[5]: https://raw.githubusercontent.com/tradewelltech/beavers/master/docs/static/icons/beavers/logo.svg
 
 
 [pypi-image]: https://img.shields.io/pypi/v/beavers
