@@ -1,7 +1,7 @@
 
 [tool.poetry]
 name = "beavers"
-version = "0.0.0"
+version = "0.2.0.post11.dev0+2b5b59d"
 description = "Python stream processing"
 authors = ["Tradewell Tech <engineering@tradewelltech.co>"]
 maintainers = ["0x26res <0x26res@gmail.com>"]
@@ -68,7 +68,7 @@ skip = [".gitignore"]
 skips = ["B101", "B311"]
 
 [tool.poetry-dynamic-versioning]
-enable = true
+enable = false
 
 [tool.poetry-dynamic-versioning.substitution]
 files = ["*/__init__.py"]
