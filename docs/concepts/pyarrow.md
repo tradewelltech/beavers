@@ -1,6 +1,6 @@
 # Pyarrow integration
 
-This section explains how to a beavers with pyarrow.
+This section explains how to use beavers with pyarrow.
 
 ## ETF value calculation example
 
