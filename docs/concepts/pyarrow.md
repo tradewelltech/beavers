@@ -4,10 +4,10 @@ This section explains how to use beavers with pyarrow.
 
 ## ETF value calculation example
 
-In this example we want to calculate the value of an ETF.
+In this example we want to calculate the value of ETFs.
 If you are not familiar with ETFs, think about them as just a basket of shares.
 
-Starting with a table of prices:
+Starting with a table of individual share prices:
 ```python
 --8<-- "examples/pyarrow_concepts.py:business_logic_price"
 ```
@@ -53,12 +53,12 @@ First we define two source streams, made of `pyarrow.Table`:
 --8<-- "examples/pyarrow_concepts.py:dag_source"
 ```
 
-Then we keep track of the latest value for each source stream:
+Then we keep track of the latest value for each source streams:
 ```python
 --8<-- "examples/pyarrow_concepts.py:dag_state"
 ```
 
-Lastly we put together the prices and ETF composition state:
+Lastly we put together the share prices and ETF composition:
 ```python
 --8<-- "examples/pyarrow_concepts.py:dag_calculation"
 ```
@@ -72,18 +72,18 @@ And that's it:
 
 ## Taming updates
 
-This dag does the job of calculating the ETF value in real time.
+This simple dag does the job of calculating the ETF value in real time.
 But there is one issue.
-The value of every ETFs would update every time either the `price` or the `etf_composition` source update.
+The value of every ETF would update every time either `price` or `etf_composition` update.
 Even if the updates comes on a ticker that is not relevant to the ETFs we are tracking. 
 
-In the example below, when the price of GameStop updates, we recalculate the value of every ETFs.
+In the example below, when the price of GameStop updates, we recalculate the value of every ETF.
 Even though their value hasn't changed:
 ```python
 --8<-- "examples/pyarrow_concepts.py:spurious_update"
 ```
 
-To tame update we need to identify which ETF needs updating.
+To tame updates we need to identify which ETF needs updating.
 
 ETF values can update because their composition has changed:
 ```python
@@ -95,13 +95,13 @@ Or because one of their component has updated:
 --8<-- "examples/pyarrow_concepts.py:updated_because_of_price"
 ```
 
-We can then put it back together and only calculate updates for relevant symbols:
+We can then put it back together and only calculate updates for relevant ETFs:
 ```python
 --8<-- "examples/pyarrow_concepts.py:update_all"
 ```
 
 
-And see that only the value TECH ETF updates when a tech stock update:
+And see that only the value "TECH" ETF updates when a tech stock update:
 ```python
 --8<-- "examples/pyarrow_concepts.py:update_all_test"
 ```
