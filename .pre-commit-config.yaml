@@ -30,6 +30,7 @@ repos:
     rev: v0.0.265
     hooks:
       - id: ruff
+        args: ['--fix']
   - repo: https://github.com/PyCQA/bandit
     rev: 1.7.4
     hooks:

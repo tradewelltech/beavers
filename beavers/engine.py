@@ -19,9 +19,14 @@ from typing import (
 
 if TYPE_CHECKING:
     try:
-        from beavers.arrow import ArrowDagWrapper
+        from beavers.pyarrow_wrapper import ArrowDagWrapper
     except ImportError:
         ArrowDagWrapper = None
+    try:
+        from beavers.pandas_wrapper import PandasWrapper
+    except ImportError:
+        PandasWrapper = None
+
 
 import pandas as pd
 
@@ -615,9 +620,17 @@ class Dag:
     def pa(self) -> "ArrowDagWrapper":
         """Returns the ArrowDagWrapper."""
         # Import dynamically because of circular dependency
-        from beavers.arrow import ArrowDagWrapper
+        from beavers.pyarrow_wrapper import ArrowDagWrapper
 
         return ArrowDagWrapper(self)
+
+    @cached_property
+    def pd(self) -> "PandasWrapper":
+        """Returns the PandasWrapper."""
+        # Import dynamically because of circular dependency
+        from beavers.pandas_wrapper import PandasWrapper
+
+        return PandasWrapper(self)
 
     def _add_stream(
         self,

@@ -3,7 +3,7 @@ import pyarrow.compute as pc
 import pytest
 
 from beavers import Dag
-from beavers.arrow import _concat_arrow_arrays, _get_latest, _LatestTracker
+from beavers.pyarrow_wrapper import _concat_arrow_arrays, _get_latest, _LatestTracker
 
 SIMPLE_SCHEMA = pa.schema(
     [
