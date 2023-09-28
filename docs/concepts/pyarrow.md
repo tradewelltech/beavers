@@ -53,7 +53,7 @@ First we define two source streams, made of `pyarrow.Table`:
 --8<-- "examples/pyarrow_concepts.py:dag_source"
 ```
 
-Then we keep track of the latest value for each source streams:
+Then we keep track of the latest value for each source stream:
 ```python
 --8<-- "examples/pyarrow_concepts.py:dag_state"
 ```
