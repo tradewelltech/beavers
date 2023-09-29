@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 <!-- insertion marker -->
+## [v0.3.0](https://github.com/tradewelltech/beavers/releases/tag/v0.3.0) - 2023-09-29
+
+<small>[Compare with v0.2.0](https://github.com/tradewelltech/beavers/compare/v0.2.0...v0.3.0)</small>
+
+### Added
+
+- Add faq, make kafka extra dep, update readme, use poetry in tox. (#44) ([de0ddf5](https://github.com/tradewelltech/beavers/commit/de0ddf5baa51fbf5a9b818364e8a2e589a2b0974) by 0x26res).
+- Add pyarrow module (#42) ([1117f37](https://github.com/tradewelltech/beavers/commit/1117f375b36a5eac1468c3a5888f1fdc6e9f1ba7) by 0x26res).
+- Add developer page (#41) ([b717b62](https://github.com/tradewelltech/beavers/commit/b717b6224bf9e5fd585ff6b0bed77b3333ad2a68) by 0x26res).
+- Add logos ([7f6b1cf](https://github.com/tradewelltech/beavers/commit/7f6b1cfc09453927ede5e485c242311362b1e417) by aandres).
+
+### Fixed
+
+- Fix logo (#45) ([f24f0dc](https://github.com/tradewelltech/beavers/commit/f24f0dcb8a911f193aa045da0b6a0f20a69fc64e) by 0x26res).
+- Fix tests ([cc52ae6](https://github.com/tradewelltech/beavers/commit/cc52ae6f454d6cf3afd98b6804fd750de5a2eab1) by aandres).
+
+### Changed
+
+- change update docs deps (#40) ([04bf706](https://github.com/tradewelltech/beavers/commit/04bf706f9277285b9dac922bb0255402d095da6e) by 0x26res).
+
 ## [v0.2.0](https://github.com/tradewelltech/beavers/releases/tag/v0.2.0) - 2023-09-19
 
 <small>[Compare with v0.1.0](https://github.com/tradewelltech/beavers/compare/v0.1.0...v0.2.0)</small>
