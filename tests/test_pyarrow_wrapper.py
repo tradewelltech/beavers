@@ -19,7 +19,7 @@ SIMPLE_TABLE_2 = table = pa.table([[1, 2], ["d", "e"], [0, 0]], schema=SIMPLE_SC
 def test_source_stream():
     dag = Dag()
 
-    node = dag.pa.source_stream(schema=SIMPLE_SCHEMA)
+    node = dag.pa.source_table(schema=SIMPLE_SCHEMA)
     assert node._empty_factory() == SIMPLE_SCHEMA.empty_table()
 
     node.set_stream(SIMPLE_TABLE)
@@ -33,14 +33,14 @@ def test_source_stream():
 def test_source_stream_name():
     dag = Dag()
 
-    node = dag.pa.source_stream(schema=SIMPLE_SCHEMA, name="source_1")
+    node = dag.pa.source_table(schema=SIMPLE_SCHEMA, name="source_1")
     assert dag.get_sources() == {"source_1": node}
 
 
 def test_table_stream():
     dag = Dag()
 
-    source = dag.pa.source_stream(SIMPLE_SCHEMA)
+    source = dag.pa.source_table(SIMPLE_SCHEMA)
     node = dag.pa.table_stream(
         lambda x: x.select(["col1"]),
         pa.schema([pa.field("col1", pa.int32())]),
@@ -54,7 +54,7 @@ def test_table_stream():
 def test_filter_stream():
     dag = Dag()
 
-    source = dag.pa.source_stream(SIMPLE_SCHEMA)
+    source = dag.pa.source_table(SIMPLE_SCHEMA)
     node = dag.pa.filter_stream(
         lambda x, y: pc.equal(x["col1"], y), source, dag.const(1)
     )
@@ -133,7 +133,7 @@ def test_latest_tracker():
 
 def test_latest_by_keys():
     dag = Dag()
-    source = dag.pa.source_stream(SIMPLE_SCHEMA)
+    source = dag.pa.source_table(SIMPLE_SCHEMA)
     latest = dag.pa.latest_by_keys(source, ["col1"])
 
     dag.execute()
@@ -163,7 +163,7 @@ def test_latest_by_keys_bad():
     with pytest.raises(TypeError, match=r"Argument should be a stream Node"):
         dag.pa.latest_by_keys(dag.state(lambda: None).map(), ["col1"])
 
-    source = dag.pa.source_stream(SIMPLE_SCHEMA)
+    source = dag.pa.source_table(SIMPLE_SCHEMA)
 
     with pytest.raises(TypeError, match="123"):
         dag.pa.latest_by_keys(source, 123)
@@ -177,7 +177,7 @@ def test_latest_by_keys_bad():
 
 def test_get_column():
     dag = Dag()
-    source = dag.pa.source_stream(SIMPLE_SCHEMA)
+    source = dag.pa.source_table(SIMPLE_SCHEMA)
     array = dag.pa.get_column(source, "col1")
 
     dag.execute()
@@ -205,7 +205,7 @@ def test_get_column_bad():
     with pytest.raises(TypeError, match=r"Argument should be a stream Node"):
         dag.pa.get_column(dag.state(lambda: None).map(), "col1")
 
-    source = dag.pa.source_stream(SIMPLE_SCHEMA)
+    source = dag.pa.source_table(SIMPLE_SCHEMA)
 
     with pytest.raises(TypeError, match="123"):
         dag.pa.get_column(source, 123)

@@ -16,17 +16,17 @@ def _empty_df(dtypes: pd.Series) -> pd.DataFrame:
 
 @dataclasses.dataclass(frozen=True)
 class PandasWrapper:
-    """Helper call for adding pyarrow Nodes to a Dag."""
+    """Helper call for adding pandas Nodes to a Dag."""
 
-    dag: Dag
+    _dag: Dag
 
     def source_df(
         self, dtypes: pd.Series, name: Optional[str] = None
     ) -> Node[pd.DataFrame]:
         empty = _empty_df(dtypes)
-        return self.dag.source_stream(empty, name=name)
+        return self._dag.source_stream(empty, name=name)
 
     def df_stream(
         self, function: Callable[P, pd.DataFrame], dtypes: pd.Series
     ) -> NodePrototype[pd.DataFrame]:
-        return self.dag.stream(function, empty=_empty_df(dtypes))
+        return self._dag.stream(function, empty=_empty_df(dtypes))
