@@ -57,7 +57,8 @@ nav:
     - reference/engine.md
     - reference/replay.md
     - reference/kafka.md
-    - reference/arrow.md
+    - reference/pandas_wrapper.md
+    - reference/pyarrow_wrapper.md
   - install.md
   - development.md
   - faq.md
