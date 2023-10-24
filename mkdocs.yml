@@ -52,6 +52,7 @@ nav:
     - concepts/advanced.md
     - concepts/replay.md
     - concepts/kafka.md
+    - concepts/pandas.md
     - concepts/pyarrow.md
   - API Reference:
     - reference/engine.md

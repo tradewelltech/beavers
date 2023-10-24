@@ -78,6 +78,14 @@ def _check_columns(columns: list[str], schema: pa.Schema) -> list[str]:
     return list(columns)
 
 
+def _get_stream_schema(node: Node[pa.Table]) -> pa.Schema:
+    empty = _get_stream_node_empy(node)
+    if not isinstance(empty, pa.Table):
+        raise TypeError(f"Argument should be a {Node.__name__}[pa.Table]")
+    else:
+        return empty.schema
+
+
 @dataclasses.dataclass()
 class _LatestTracker:
     key_columns: list[str]
@@ -88,14 +96,6 @@ class _LatestTracker:
             pa.concat_tables([self.current, stream]), self.key_columns
         )
         return self.current
-
-
-def _get_stream_schema(node: Node[pa.Table]) -> pa.Schema:
-    empty = _get_stream_node_empy(node)
-    if not isinstance(empty, pa.Table):
-        raise TypeError(f"Argument should be a {Node.__name__}[pa.Table]")
-    else:
-        return empty.schema
 
 
 @dataclasses.dataclass(frozen=True)

@@ -335,6 +335,12 @@ class Node(Generic[T]):
         for observer in self._observers:
             observer._stain()
 
+    def _get_empty(self) -> T:
+        if not self._is_stream():
+            raise TypeError(f"Argument should be a stream {Node.__name__}")
+        else:
+            return self._empty_factory()
+
 
 @dataclasses.dataclass(frozen=True)
 class NodePrototype(Generic[T]):
