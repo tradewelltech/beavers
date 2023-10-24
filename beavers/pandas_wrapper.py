@@ -17,7 +17,7 @@ def _empty_df(dtypes: pd.Series) -> pd.DataFrame:
 def _get_stream_dtypes(node: Node[pd.DataFrame]) -> pd.Series:
     empty = node._get_empty()
     if not isinstance(empty, pd.DataFrame):
-        raise TypeError(f"Argument should be a {Node.__name__}[pa.Table]")
+        raise TypeError(f"Argument should be a {Node.__name__}[pd.DataFrame]")
     else:
         return empty.dtypes
 
@@ -32,6 +32,7 @@ class _LatestTracker:
             pd.concat([self.current, stream])
             .groupby(self.key_columns, as_index=False)
             .tail(1)
+            .reset_index(drop=True)
         )
 
         return self.current

@@ -1,6 +1,6 @@
 """Module for building dags using pyarrow."""
 import dataclasses
-from typing import Any, Callable, Iterable, Optional, ParamSpec, Sequence
+from typing import Callable, Iterable, Optional, ParamSpec, Sequence
 
 import numpy as np
 import pyarrow as pa
@@ -50,17 +50,8 @@ def _check_column(column: str, schema: pa.Schema):
         raise TypeError(f"field {column} no in schema: {schema.names}")
 
 
-def _get_stream_node_empy(node: Node) -> Any:
-    if not isinstance(node, Node):
-        raise TypeError(f"Argument should be a {Node.__name__}")
-    elif not node._is_stream():
-        raise TypeError(f"Argument should be a stream {Node.__name__}")
-    else:
-        return node._empty_factory()
-
-
 def _check_array(node: Node[pa.Array | pa.ChunkedArray]) -> pa.DataType:
-    empty = _get_stream_node_empy(node)
+    empty = node._get_empty()
     if not isinstance(empty, (pa.Array, pa.ChunkedArray)):
         raise TypeError(f"Argument should be a {Node.__name__}[pa.Array]")
     else:
@@ -79,7 +70,7 @@ def _check_columns(columns: list[str], schema: pa.Schema) -> list[str]:
 
 
 def _get_stream_schema(node: Node[pa.Table]) -> pa.Schema:
-    empty = _get_stream_node_empy(node)
+    empty = node._get_empty()
     if not isinstance(empty, pa.Table):
         raise TypeError(f"Argument should be a {Node.__name__}[pa.Table]")
     else:
