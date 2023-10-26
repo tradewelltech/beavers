@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 <!-- insertion marker -->
+## [v0.3.1](https://github.com/tradewelltech/beavers/releases/tag/v0.3.1) - 2023-10-26
+
+<small>[Compare with v0.3.0](https://github.com/tradewelltech/beavers/compare/v0.3.0...v0.3.1)</small>
+### Added
+
+- Add pandas module (#47) ([ac81344](https://github.com/tradewelltech/beavers/commit/ac8134452c3a9636ea5a119e65db87df5a245271) by 0x26res).
+
 ## [v0.3.0](https://github.com/tradewelltech/beavers/releases/tag/v0.3.0) - 2023-09-29
 
 <small>[Compare with v0.2.0](https://github.com/tradewelltech/beavers/compare/v0.2.0...v0.3.0)</small>
