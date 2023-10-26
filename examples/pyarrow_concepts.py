@@ -86,8 +86,8 @@ etf_value_table = calculate_etf_value(
 from beavers import Dag
 
 dag = Dag()
-price_source = dag.pa.source_stream(schema=PRICE_SCHEMA, name="price")
-etf_composition_source = dag.pa.source_stream(
+price_source = dag.pa.source_table(schema=PRICE_SCHEMA, name="price")
+etf_composition_source = dag.pa.source_table(
     schema=ETF_COMPOSITION_SCHEMA, name="etf_composition"
 )
 # --8<-- [end:dag_source]

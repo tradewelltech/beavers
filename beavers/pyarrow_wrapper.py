@@ -1,6 +1,6 @@
 """Module for building dags using pyarrow."""
 import dataclasses
-from typing import Any, Callable, Iterable, Optional, ParamSpec, Sequence
+from typing import Callable, Iterable, Optional, ParamSpec, Sequence
 
 import numpy as np
 import pyarrow as pa
@@ -50,17 +50,8 @@ def _check_column(column: str, schema: pa.Schema):
         raise TypeError(f"field {column} no in schema: {schema.names}")
 
 
-def _get_stream_node_empy(node: Node) -> Any:
-    if not isinstance(node, Node):
-        raise TypeError(f"Argument should be a {Node.__name__}")
-    elif not node._is_stream():
-        raise TypeError(f"Argument should be a stream {Node.__name__}")
-    else:
-        return node._empty_factory()
-
-
 def _check_array(node: Node[pa.Array | pa.ChunkedArray]) -> pa.DataType:
-    empty = _get_stream_node_empy(node)
+    empty = node._get_empty()
     if not isinstance(empty, (pa.Array, pa.ChunkedArray)):
         raise TypeError(f"Argument should be a {Node.__name__}[pa.Array]")
     else:
@@ -78,6 +69,14 @@ def _check_columns(columns: list[str], schema: pa.Schema) -> list[str]:
     return list(columns)
 
 
+def _get_stream_schema(node: Node[pa.Table]) -> pa.Schema:
+    empty = node._get_empty()
+    if not isinstance(empty, pa.Table):
+        raise TypeError(f"Argument should be a {Node.__name__}[pa.Table]")
+    else:
+        return empty.schema
+
+
 @dataclasses.dataclass()
 class _LatestTracker:
     key_columns: list[str]
@@ -90,29 +89,23 @@ class _LatestTracker:
         return self.current
 
 
-def _get_stream_schema(node: Node[pa.Table]) -> pa.Schema:
-    empty = _get_stream_node_empy(node)
-    if not isinstance(empty, pa.Table):
-        raise TypeError(f"Argument should be a {Node.__name__}[pa.Table]")
-    else:
-        return empty.schema
-
-
 @dataclasses.dataclass(frozen=True)
 class ArrowDagWrapper:
     """Helper call for adding pyarrow Nodes to a Dag."""
 
-    dag: Dag
+    _dag: Dag
 
-    def source_stream(
+    def source_table(
         self, schema: pa.Schema, name: Optional[str] = None
     ) -> Node[pa.Table]:
-        return self.dag.source_stream(empty=schema.empty_table(), name=name)
+        """Add a source stream of type `pa.Table`."""
+        return self._dag.source_stream(empty=schema.empty_table(), name=name)
 
     def table_stream(
         self, function: Callable[P, pa.Table], schema: pa.Schema
     ) -> NodePrototype[pa.Table]:
-        return self.dag.stream(function, empty=schema.empty_table())
+        """Add a stream node of output type `pa.Table`"""
+        return self._dag.stream(function, empty=schema.empty_table())
 
     def filter_stream(
         self,
@@ -121,24 +114,27 @@ class ArrowDagWrapper:
         *args: Node,
         **kwargs: Node,
     ) -> Node[pa.Table]:
+        """Filter a stream Node of type `pa.Table`."""
         function = _TableFiler(predicate)
         schema = _get_stream_schema(stream)
         _check_function(function)
-        return self.dag.stream(function, empty=schema.empty_table()).map(
+        return self._dag.stream(function, empty=schema.empty_table()).map(
             stream, *args, **kwargs
         )
 
     def latest_by_keys(self, stream: Node[pa.Table], keys: list[str]) -> Node[pa.Table]:
+        """Build a state of the latest row by keys."""
         schema = _get_stream_schema(stream)
         keys = _check_columns(keys, schema)
-        return self.dag.state(_LatestTracker(keys, schema.empty_table())).map(stream)
+        return self._dag.state(_LatestTracker(keys, schema.empty_table())).map(stream)
 
     def get_column(self, stream: Node[pa.Table], key: str) -> Node[pa.ChunkedArray]:
+        """Return a column from a stream node of type pa.Table."""
         schema = _get_stream_schema(stream)
         _check_column(key, schema)
         field = schema.field(key)
         empty = pa.chunked_array([pa.array([], field.type)])
-        return self.dag.stream(lambda x: x[key], empty=empty).map(stream)
+        return self._dag.stream(lambda x: x[key], empty=empty).map(stream)
 
     def concat_arrays(
         self, *streams: Node[pa.Array | pa.ChunkedArray]
@@ -154,6 +150,6 @@ class ArrowDagWrapper:
                 raise TypeError(f"Array type mismatch {array_type} vs {each_type}")
 
         empty = pa.chunked_array([pa.array([], array_type)])
-        return self.dag.stream(lambda *x: _concat_arrow_arrays(x), empty=empty).map(
+        return self._dag.stream(lambda *x: _concat_arrow_arrays(x), empty=empty).map(
             *streams
         )

@@ -19,9 +19,14 @@ from typing import (
 
 if TYPE_CHECKING:
     try:
-        from beavers.arrow import ArrowDagWrapper
+        from beavers.pyarrow_wrapper import ArrowDagWrapper
     except ImportError:
         ArrowDagWrapper = None
+    try:
+        from beavers.pandas_wrapper import PandasWrapper
+    except ImportError:
+        PandasWrapper = None
+
 
 import pandas as pd
 
@@ -330,6 +335,12 @@ class Node(Generic[T]):
         for observer in self._observers:
             observer._stain()
 
+    def _get_empty(self) -> T:
+        if not self._is_stream():
+            raise TypeError(f"Argument should be a stream {Node.__name__}")
+        else:
+            return self._empty_factory()
+
 
 @dataclasses.dataclass(frozen=True)
 class NodePrototype(Generic[T]):
@@ -615,9 +626,17 @@ class Dag:
     def pa(self) -> "ArrowDagWrapper":
         """Returns the ArrowDagWrapper."""
         # Import dynamically because of circular dependency
-        from beavers.arrow import ArrowDagWrapper
+        from beavers.pyarrow_wrapper import ArrowDagWrapper
 
         return ArrowDagWrapper(self)
+
+    @cached_property
+    def pd(self) -> "PandasWrapper":
+        """Returns the PandasWrapper."""
+        # Import dynamically because of circular dependency
+        from beavers.pandas_wrapper import PandasWrapper
+
+        return PandasWrapper(self)
 
     def _add_stream(
         self,
