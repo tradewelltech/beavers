@@ -1,10 +1,11 @@
+import dataclasses
 from typing import Callable
 
 import pandas as pd
 import pyarrow as pa
 
 from beavers.engine import UTC_MAX
-from beavers.replay import DataSource
+from beavers.replay import DataSink, DataSource
 
 
 class ArrowTableDataSource(DataSource[pa.Table]):
@@ -37,3 +38,17 @@ class ArrowTableDataSource(DataSource[pa.Table]):
             return UTC_MAX
         else:
             return self._timestamp_column.iloc[self._index]
+
+
+@dataclasses.dataclass
+class ArrowTableDataSink(DataSink[pa.Table]):
+    saver: Callable[[pa.Table], None]
+    chunks: list[pa.Table] = dataclasses.field(default_factory=list)
+
+    def append(self, timestamp: pd.Timestamp, data: pa.Table):
+        self.chunks.append(data)
+
+    def close(self):
+        if self.chunks:
+            results = pa.concat_tables(self.chunks)
+            self.saver(results)
