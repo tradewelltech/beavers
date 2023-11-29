@@ -4,11 +4,22 @@ import random
 from typing import Callable, Dict, Generic, TypeVar
 
 import pandas as pd
+import pyarrow as pa
 
 from beavers.engine import UTC_MAX, Dag, TimerManager
 from beavers.replay import DataSink, DataSource
 
 T = TypeVar("T")
+
+TEST_TABLE = pa.table(
+    {
+        "timestamp": [
+            pd.to_datetime("2023-01-01T00:00:00Z"),
+            pd.to_datetime("2023-01-02T00:00:00Z"),
+        ],
+        "value": [1, 2],
+    }
+)
 
 
 class GetLatest(Generic[T]):
