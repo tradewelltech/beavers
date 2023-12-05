@@ -7,16 +7,7 @@ import pytest
 
 from beavers.engine import UTC_MAX
 from beavers.pyarrow_replay import ArrowTableDataSink, ArrowTableDataSource
-
-TEST_TABLE = pa.table(
-    {
-        "timestamp": [
-            pd.to_datetime("2023-01-01T00:00:00Z"),
-            pd.to_datetime("2023-01-02T00:00:00Z"),
-        ],
-        "value": [1, 2],
-    }
-)
+from tests.test_util import TEST_TABLE
 
 
 def test_arrow_table_data_source():
