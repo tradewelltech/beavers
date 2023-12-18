@@ -14,6 +14,8 @@
 
 # Beavers
 
+[Documentation][6] / [Installation][7] / [Repository][1] / [PyPI][8]
+
 [Beavers][1] is a python library for stream processing, optimized for analytics. 
 
 It is used at [Tradewell Technologies][2], 
@@ -47,7 +49,9 @@ for both realtime and batch jobs.
 [3]: https://github.com/janestreet/incremental
 [4]: https://www.confluent.io/blog/kafka-streams-tables-part-1-event-streaming/
 [5]: https://raw.githubusercontent.com/tradewelltech/beavers/master/docs/static/icons/beavers/logo.svg
-
+[6]: https://beavers.readthedocs.io/en/latest/
+[7]: https://beavers.readthedocs.io/en/latest/install/
+[8]: https://pypi.org/project/beavers/
 
 [pypi-image]: https://img.shields.io/pypi/v/beavers
 [pypi-url]: https://pypi.org/project/beavers/
