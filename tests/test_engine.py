@@ -684,3 +684,53 @@ def test_mutate_inputs():
     assert modifier.get_value() == [1]
     assert passthrough.get_value() == []  # Notified but got the factory list
     assert passthrough.get_cycle_id() != dag.get_cycle_id()  # considered not updated
+
+
+def test_prune_simple():
+    dag = Dag()
+    source = dag.source_stream([], name="source")
+    node = dag.stream(lambda x: x, []).map(source)
+    assert node in dag._nodes
+    assert source in dag._nodes
+    assert dag.get_sources() == {"source": source}
+    dag.prune()
+    assert node not in dag._nodes
+    assert source not in dag._nodes
+    assert dag.get_sources() == {}
+    dag.execute()
+
+
+def test_prune_nothing():
+    dag = Dag()
+    source = dag.source_stream([], name="source")
+    node = dag.stream(lambda x, _: x, []).map(source, dag.now())
+    dag.sink("sink", node)
+
+    assert node in dag._nodes
+    assert source in dag._nodes
+    assert dag.get_sources() == {"source": source}
+    assert dag.prune() == []
+
+
+def test_prune_sinks():
+    dag = Dag()
+    source_a = dag.source_stream([], name="source_a")
+    source_b = dag.source_stream([], name="source_b")
+    node_a = dag.stream(lambda x: x, []).map(source_a)
+    node_b = dag.stream(lambda x: x, []).map(source_b)
+    sink_b = dag.sink("sink_b", node_b)
+
+    dag.prune()
+    assert source_a not in dag._nodes
+    assert node_a not in dag._nodes
+    assert source_b in dag._nodes
+    assert node_b in dag._nodes
+    assert sink_b in dag._nodes
+    assert dag.get_sources() == {"source_b": source_b}
+    dag.execute()
+
+    source_a.set_stream(["a", "b"])
+    source_b.set_stream(["a", "b"])
+    dag.execute()
+    assert node_a.get_value() == []  # Not updated
+    assert node_b.get_value() == ["a", "b"]

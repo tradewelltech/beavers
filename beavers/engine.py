@@ -578,6 +578,38 @@ class Dag:
             )
         )
 
+    def prune(self) -> list[Node]:
+        """Remove any parts of the dag that are not connected to a sink."""
+        to_remove = []
+        for node in self._nodes[::-1]:
+            if (
+                not isinstance(node._function, _SinkFunction)
+                and node is not self._now_node
+                and node is not self._silent_now_node
+            ):
+                observers = [
+                    observer
+                    for observer in node._observers
+                    if observer not in to_remove
+                ]
+                if len(observers) == 0:
+                    to_remove.append(node)
+                else:
+                    node._observers.clear()
+                    node._observers.extend(observers)
+
+        if to_remove:
+            self._nodes = [node for node in self._nodes if node not in to_remove]
+            self._sources = {
+                name: node
+                for name, node in self._sources.items()
+                if node not in to_remove
+            }
+            self._timer_manager_nodes = [
+                node for node in self._timer_manager_nodes if node not in to_remove
+            ]
+        return to_remove
+
     def get_sources(self) -> dict[str, Node]:
         """Return the source `Node`s."""
         return self._sources
