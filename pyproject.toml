@@ -41,6 +41,10 @@ mock = "*"
 git-changelog = ">=2.2.0"
 tabulate = "*"
 
+
+[tool.poetry.group.docs]
+optional = true
+
 [tool.poetry.group.docs.dependencies]
 markdown-include = "*"
 mkdocs = ">=1.5.3"
