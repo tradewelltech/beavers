@@ -40,7 +40,7 @@ git-changelog -io CHANGELOG.md
 
 For new release, first prepare the change log, push and merge it.
 ```shell
-git-changelog -bio CHANGELOG.md
+git-changelog --bump=auto -io CHANGELOG.md
 ```
 
 Then tag and push:
