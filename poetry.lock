@@ -1648,4 +1648,4 @@ pyarrow = ["pyarrow"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.13"
-content-hash = "c55ed152cfc3cde0a296bf2eedd2e3498582da45f6c9414f52bdd0900b0271f6"
+content-hash = "e90b15254873f1996d585cf0a9af74f003027aba9854b9c6c3fcabe0a3730aad"
