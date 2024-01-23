@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 <!-- insertion marker -->
+## [v0.5.0](https://github.com/tradewelltech/beavers/releases/tag/v0.5.0) - 2024-01-23
+
+<small>[Compare with v0.4.0](https://github.com/tradewelltech/beavers/compare/v0.4.0...v0.5.0)</small>
+
+### Added
+
+- Add python 12 support (#53) ([344ff69](https://github.com/tradewelltech/beavers/commit/344ff69309d81780d9d08effc2fdfe3b1f8d9b22) by 0x26res).
+- Add prune ([4e5b06f](https://github.com/tradewelltech/beavers/commit/4e5b06f073c2e210f4cca8d67f096698c52c3fa9) by aandres).
+- Add kafka json to arrow support (#50) ([120c116](https://github.com/tradewelltech/beavers/commit/120c116d13ab46604d54088bb07d851ff5d3fd00) by 0x26res).
+
+
 ## [v0.4.0](https://github.com/tradewelltech/beavers/releases/tag/v0.4.0) - 2023-11-26
 
 <small>[Compare with v0.3.1](https://github.com/tradewelltech/beavers/compare/v0.3.1...v0.4.0)</small>
