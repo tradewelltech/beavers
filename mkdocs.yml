@@ -61,5 +61,5 @@ nav:
     - reference/pandas_wrapper.md
     - reference/pyarrow_wrapper.md
   - install.md
-  - development.md
+  - contributing.md
   - faq.md

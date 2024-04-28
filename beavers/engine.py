@@ -173,9 +173,9 @@ class _SourceState(Generic[T]):
 class _NodeInputs:
     """Internal representation of a node inputs."""
 
-    positional: tuple[Node]
+    positional: tuple[Node, ...]
     key_word: dict[str, Node]
-    nodes: tuple[Node]
+    nodes: tuple[Node, ...]
 
     @staticmethod
     def create(positional: Sequence[Node], key_word: dict[str, Node]) -> "_NodeInputs":
