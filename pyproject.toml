@@ -13,11 +13,12 @@ license = "Apache-2.0"
 repository = "https://github.com/tradewelltech/beavers"
 documentation = "https://beavers.readthedocs.io/en/latest/"
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "License :: OSI Approved :: Apache Software License",
     "Natural Language :: English",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 keywords = ["apache-arrow", "streaming", "data"]
 
