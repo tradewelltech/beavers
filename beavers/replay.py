@@ -1,4 +1,5 @@
 """Module for replaying historical data."""
+
 import abc
 import collections.abc
 import dataclasses
@@ -35,6 +36,11 @@ class ReplayContext:
     start: pd.Timestamp
     end: pd.Timestamp
     frequency: pd.Timedelta
+
+    def __post_init__(self):
+        """Check arguments are valid."""
+        assert self.start.tzname() == "UTC"
+        assert self.end.tzname() == "UTC"
 
 
 class DataSource(Protocol[T]):
@@ -363,3 +369,20 @@ class IteratorDataSourceAdapter(DataSource[T]):
             return next(self._sources)
         except StopIteration:
             return None
+
+
+class NoOpDataSink(DataSink):
+    """DataSink that does nothing."""
+
+    def append(self, timestamp: pd.Timestamp, data: T):
+        pass
+
+    def close(self):
+        pass
+
+
+class NoOpDataSinkProvider:
+    """DataSinkProvider that provides a NoOpDataSink."""
+
+    def __call__(self, context: ReplayContext) -> DataSink[T]:
+        return NoOpDataSink()
