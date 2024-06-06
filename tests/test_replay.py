@@ -8,6 +8,7 @@ from beavers.engine import UTC_MAX, Dag
 from beavers.replay import (
     DataSource,
     IteratorDataSourceAdapter,
+    NoOpDataSinkProvider,
     ReplayContext,
     ReplayDriver,
     T,
@@ -316,3 +317,10 @@ def test_replay_run_cycle():
     assert metrics.warp_ratio > 0.0
     assert driver.current_time == pd.to_datetime("2023-01-02 12:00:00Z")
     assert driver.is_done()
+
+
+def test_no_op():
+    provider = NoOpDataSinkProvider()
+    data_sink = provider(ReplayContext(UTC_MAX, UTC_MAX, pd.to_timedelta("1s")))
+    data_sink.append(UTC_MAX, None)
+    data_sink.close()
