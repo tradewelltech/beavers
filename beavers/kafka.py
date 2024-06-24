@@ -1,4 +1,5 @@
 """Module for consuming data in real time from kafka."""
+
 import contextlib
 import dataclasses
 import logging
@@ -10,7 +11,7 @@ import confluent_kafka
 import confluent_kafka.admin
 import pandas as pd
 
-from beavers.engine import UTC_EPOCH, UTC_MAX, Dag, Node
+from beavers.dag import UTC_EPOCH, UTC_MAX, Dag, Node
 
 logger = logging.getLogger(__name__)
 

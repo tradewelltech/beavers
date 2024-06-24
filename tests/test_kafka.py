@@ -14,7 +14,7 @@ import pytest
 from confluent_kafka import Message, TopicPartition
 from confluent_kafka.admin import ClusterMetadata, PartitionMetadata, TopicMetadata
 
-from beavers.engine import UTC_EPOCH, UTC_MAX, Dag
+from beavers.dag import UTC_EPOCH, UTC_MAX, Dag
 from beavers.kafka import (
     ConsumerMetrics,
     KafkaDriver,

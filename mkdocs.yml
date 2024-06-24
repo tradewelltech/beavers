@@ -55,7 +55,7 @@ nav:
     - concepts/pandas.md
     - concepts/pyarrow.md
   - API Reference:
-    - reference/engine.md
+    - reference/dag.md
     - reference/replay.md
     - reference/kafka.md
     - reference/pandas_wrapper.md

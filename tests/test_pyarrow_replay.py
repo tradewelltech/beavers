@@ -5,7 +5,7 @@ import pyarrow as pa
 import pyarrow.csv
 import pytest
 
-from beavers.engine import UTC_MAX
+from beavers.dag import UTC_MAX
 from beavers.pyarrow_replay import ArrowTableDataSink, ArrowTableDataSource
 from tests.test_util import TEST_TABLE
 

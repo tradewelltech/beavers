@@ -1,11 +1,12 @@
 """Module for building dags using pandas."""
+
 import dataclasses
 from typing import Callable, Optional, ParamSpec
 
 import pandas as pd
 
 from beavers import Dag, Node
-from beavers.engine import NodePrototype
+from beavers.dag import NodePrototype
 
 P = ParamSpec("P")
 

@@ -4,7 +4,7 @@ from typing import Callable
 import pandas as pd
 import pyarrow as pa
 
-from beavers.engine import UTC_MAX
+from beavers.dag import UTC_MAX
 from beavers.replay import DataSink, DataSource
 
 
