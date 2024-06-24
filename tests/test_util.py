@@ -6,7 +6,7 @@ from typing import Callable, Dict, Generic, TypeVar
 import pandas as pd
 import pyarrow as pa
 
-from beavers.engine import UTC_MAX, Dag, TimerManager
+from beavers.dag import UTC_MAX, Dag, TimerManager
 from beavers.replay import DataSink, DataSource
 
 T = TypeVar("T")

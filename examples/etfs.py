@@ -9,7 +9,7 @@ from typing import Callable, Generic, Optional, TypeVar
 import numpy as np
 import pandas as pd
 
-from beavers.engine import Dag
+from beavers import Dag
 
 K = TypeVar("K")
 V = TypeVar("V")

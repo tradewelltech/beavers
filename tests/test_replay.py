@@ -4,7 +4,7 @@ from operator import attrgetter
 import pandas as pd
 import pytest
 
-from beavers.engine import UTC_MAX, Dag
+from beavers.dag import UTC_MAX, Dag
 from beavers.replay import (
     DataSource,
     IteratorDataSourceAdapter,

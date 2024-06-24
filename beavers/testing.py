@@ -2,7 +2,7 @@ from typing import Any, Optional, Sequence, TypeVar
 
 import pandas as pd
 
-from beavers.engine import Dag
+from beavers.dag import Dag
 
 T = TypeVar("T")
 

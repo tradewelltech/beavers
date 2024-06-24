@@ -1,11 +1,12 @@
 """Module for building dags using pyarrow."""
+
 import dataclasses
 from typing import Callable, Iterable, Optional, ParamSpec, Sequence
 
 import numpy as np
 import pyarrow as pa
 
-from beavers.engine import Dag, Node, NodePrototype, _check_function
+from beavers.dag import Dag, Node, NodePrototype, _check_function
 
 P = ParamSpec("P")
 

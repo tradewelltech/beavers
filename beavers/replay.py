@@ -9,7 +9,7 @@ from typing import Callable, Generic, Iterator, Optional, Protocol, TypeVar
 
 import pandas as pd
 
-from beavers.engine import UTC_MAX, Dag, Node
+from beavers.dag import UTC_MAX, Dag, Node
 
 logger = logging.getLogger(__name__)
 

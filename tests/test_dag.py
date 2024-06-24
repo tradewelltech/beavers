@@ -5,7 +5,7 @@ import time
 import pandas as pd
 import pytest
 
-from beavers.engine import (
+from beavers.dag import (
     _STATE_UNCHANGED,
     UTC_EPOCH,
     UTC_MAX,

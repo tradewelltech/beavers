@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 <!-- insertion marker -->
+## [v0.6.0](https://github.com/tradewelltech/beavers/releases/tag/v0.6.0) - 2024-06-24
+
+<small>[Compare with v0.5.0](https://github.com/tradewelltech/beavers/compare/v0.5.0...v0.6.0)</small>
+
+### Added
+
+- Add some missing replay code (#56) ([9973baa](https://github.com/tradewelltech/beavers/commit/9973baa73fd781656938578f9f0cefe7a283a389) by 0x26res).
+- Add contributing and code of conduct guide, update deps (#55) ([3bd1147](https://github.com/tradewelltech/beavers/commit/3bd114724b5f2ac1095b00b8e90a55dd3a7333ab) by 0x26res).
+
+### Fixed
+
+- fix: make group optional (#54) ([03d27af](https://github.com/tradewelltech/beavers/commit/03d27af029d95be874a0b6b5e5cbc625945b984b) by 0x26res).
+
+### Changed
+
+- Change engine to dag, add talk to the doc ([cd57456](https://github.com/tradewelltech/beavers/commit/cd57456a271f99a81602f7d7d385f0caea84acd2) by aandres).
+
 ## [v0.5.0](https://github.com/tradewelltech/beavers/releases/tag/v0.5.0) - 2024-01-23
 
 <small>[Compare with v0.4.0](https://github.com/tradewelltech/beavers/compare/v0.4.0...v0.5.0)</small>
