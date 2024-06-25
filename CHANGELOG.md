@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 <!-- insertion marker -->
+## [v0.7.0](https://github.com/tradewelltech/beavers/releases/tag/v0.7.0) - 2024-06-25
+
+<small>[Compare with v0.6.0](https://github.com/tradewelltech/beavers/compare/v0.6.0...v0.7.0)</small>
+
+### Added
+
+- Add poll time metrics ([efa487a](https://github.com/tradewelltech/beavers/commit/efa487a3e86f7748c160413ccba749e277e1bc5e) by aandres).
+
 ## [v0.6.0](https://github.com/tradewelltech/beavers/releases/tag/v0.6.0) - 2024-06-24
 
 <small>[Compare with v0.5.0](https://github.com/tradewelltech/beavers/compare/v0.5.0...v0.6.0)</small>

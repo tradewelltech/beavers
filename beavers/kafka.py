@@ -396,6 +396,8 @@ class ExecutionMetrics:
     deserialization_count: int = 0
     execution_ns: int = 0
     execution_count: int = 0
+    poll_ns: int = 0
+    poll_count: int = 0
 
     @contextlib.contextmanager
     def measure_serialization_time(self):
@@ -423,6 +425,15 @@ class ExecutionMetrics:
         finally:
             self.execution_ns += time.time_ns() - before
             self.execution_count += 1
+
+    @contextlib.contextmanager
+    def measure_poll_time(self):
+        before = time.time_ns()
+        try:
+            yield
+        finally:
+            self.poll_ns += time.time_ns() - before
+            self.poll_count += 1
 
 
 @dataclasses.dataclass(frozen=True)
@@ -459,7 +470,7 @@ class KafkaDriver:
         self._consumer_manager = consumer_manager
         self._sink_topics = runtime_sink_topics
         self._producer_manager = producer_manager
-        self._cycle_time = UTC_EPOCH
+        self._cycle_time: pd.Timestamp = UTC_EPOCH
         self._metrics = ExecutionMetrics()
 
     @staticmethod
@@ -511,7 +522,8 @@ class KafkaDriver:
         return results
 
     def run_cycle(self, poll_for_seconds: float = 1.0) -> bool:
-        messages = self._consumer_manager.poll(poll_for_seconds)
+        with self._metrics.measure_poll_time():
+            messages = self._consumer_manager.poll(poll_for_seconds)
 
         if self._run_cycle(messages):
             self._produce_records(self._dag.get_cycle_id())
