@@ -549,6 +549,8 @@ def test_kafka_driver_word_count(log_helper: LogHelper):
     assert metrics.serialization_count == 3
     assert metrics.execution_ns > 0
     assert metrics.execution_count == 3
+    assert metrics.poll_count == 6
+    assert metrics.poll_ns > 0
 
     mock_consumer.extend(
         [
