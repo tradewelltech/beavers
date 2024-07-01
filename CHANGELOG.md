@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 <!-- insertion marker -->
+## [v0.8.0](https://github.com/tradewelltech/beavers/releases/tag/v0.8.0) - 2024-07-01
+
+<small>[Compare with v0.7.0](https://github.com/tradewelltech/beavers/compare/v0.7.0...v0.8.0)</small>
+
+### Added
+
+- Add constructor to mock consumer ([370d5d6](https://github.com/tradewelltech/beavers/commit/370d5d68eb60662a110026ab7844fc3d9c6bf59b) by aandres).
+
 ## [v0.7.0](https://github.com/tradewelltech/beavers/releases/tag/v0.7.0) - 2024-06-25
 
 <small>[Compare with v0.6.0](https://github.com/tradewelltech/beavers/compare/v0.6.0...v0.7.0)</small>
