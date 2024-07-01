@@ -63,13 +63,22 @@ def mock_kafka_message(
 
 
 class MockConsumer:
-    def __init__(self):
+    def __init__(self, topics: Optional[dict[str, TopicMetadata]] = None):
         self._queue = queue.Queue()
         self._paused: list[TopicPartition] = []
-        self._topics: dict[str, TopicMetadata] = {}
+        self._topics: dict[str, TopicMetadata] = dict(topics) if topics else {}
         self._offsets_for_time: dict[Tuple[TopicPartition, int], TopicPartition] = {}
-        self._watermark_offsets: dict[TopicPartition, tuple[int, int]] = {}
+        self._watermark_offsets: dict[TopicPartition, tuple[int, int]] = (
+            {
+                TopicPartition(topic, partition_id): (0, 0)
+                for topic, topic_metadata in topics.items()
+                for partition_id in topic_metadata.partitions
+            }
+            if topics
+            else {}
+        )
         self._committed: dict[TopicPartition:int] = {}
+        self._assignments = []
 
     def append(self, message: Message):
         self._queue.put(message)
@@ -124,6 +133,9 @@ class MockConsumer:
             TopicPartition(tp.topic, tp.partition, self._committed[tp])
             for tp in partitions
         ]
+
+    def assign(self, *args, **kwargs):
+        self._assignments.append((args, kwargs))
 
 
 class MockProducer:
@@ -1252,7 +1264,9 @@ def test_no_topic():
 
 
 def test_no_policy():
-    consumer = MockConsumer()
+    consumer = MockConsumer(
+        {"topic-1": topic_metadata("topic-1", [partition_metadata(0)])}
+    )
     now = pd.to_datetime("2022-01-01", utc=True)
 
     source_topic = SourceTopic(
@@ -1260,8 +1274,6 @@ def test_no_policy():
         PassThroughKafkaMessageDeserializer(),
         "BAD!",  # type: ignore
     )
-    consumer._topics["topic-1"] = topic_metadata("topic-1", [partition_metadata(0)])
-    consumer._watermark_offsets[TopicPartition("topic-1", 0)] = (0, 1)
 
     with pytest.raises(ValueError, match="OffsetPolicy BAD! not supported for topic-1"):
         _resolve_topic_offsets(consumer, source_topic, now)
@@ -1325,9 +1337,7 @@ def test_producer_manager_create():
 
 def test_consumer_manager_create():
     with mock.patch("confluent_kafka.Consumer", autospec=True):
-        consumer_manager = _ConsumerManager.create(
-            {"enable.partition.eof": True}, [], 500, timeout=None
-        )
+        consumer_manager = _ConsumerManager.create({}, [], 500, timeout=None)
         assert consumer_manager._consumer is not None
 
 
