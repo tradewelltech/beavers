@@ -27,6 +27,7 @@ from beavers.kafka import (
     _get_previous_start_of_day,
     _poll_all,
     _ProducerManager,
+    _resolve_offset_for_time,
     _resolve_topic_offsets,
     _resolve_topics_offsets,
     _RuntimeSinkTopic,
@@ -1374,3 +1375,22 @@ def test_runtime_sink_topic():
 def test_coverage():
     with mock.patch("confluent_kafka.Consumer", autospec=True):
         KafkaDriver.create(Dag(), {}, {}, {}, {}, 1_000)
+
+
+def test_resolve_offset_for_time_minus_one():
+    tp1 = TopicPartition("topic-1", 0)
+    consumer = MockConsumer()
+    timestamp = pd.to_datetime("2022-01-01", utc=True)
+    millis = timestamp.value // 1_000_000
+
+    # If the watermark is before the given timestamp, kafka returns -1
+    # In this case we need to go to the end of the topic
+    consumer._offsets_for_time[(tp1, millis)] = TopicPartition("topic-1", 0, -1)
+    assert _resolve_offset_for_time(
+        timestamp, consumer, {tp1: (40, 80)}, timeout=1.0
+    ) == {tp1: (79, 79)}
+
+    consumer._offsets_for_time[(tp1, millis)] = TopicPartition("topic-1", 0, 70)
+    assert _resolve_offset_for_time(
+        timestamp, consumer, {tp1: (40, 80)}, timeout=1.0
+    ) == {tp1: (70, 79)}
