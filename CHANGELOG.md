@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - Add constructor to mock consumer ([370d5d6](https://github.com/tradewelltech/beavers/commit/370d5d68eb60662a110026ab7844fc3d9c6bf59b) by aandres).
+- Add log message for resolved offsets ([0816ea3](https://github.com/tradewelltech/beavers/commit/0816ea3bde7ec0b667b3d6b62935ebc2d7228adf) by aandres).
 
 ### Fixed
 
