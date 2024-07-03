@@ -275,6 +275,15 @@ class _ConsumerManager:
         consumer = confluent_kafka.Consumer(consumer_config)
         cutoff = pd.Timestamp.utcnow()
         offsets = _resolve_topics_offsets(consumer, source_topics, cutoff, timeout)
+        for tp, (start, end) in offsets.items():
+            logger.debug(
+                "Replay offsets: %s:%s %d -> %d = %d",
+                tp.topic,
+                tp.partition,
+                start,
+                end,
+                max(0, end - start),
+            )
         consumer.assign(
             [
                 confluent_kafka.TopicPartition(
@@ -610,7 +619,6 @@ def _resolve_topic_offsets(
         )
         for p in topic_meta_data.partitions.values()
     }
-
     if source_topic.offset_policy == OffsetPolicy.LATEST:
         return {tp: (end, end - 1) for tp, (start, end) in watermarks.items()}
     elif source_topic.offset_policy == OffsetPolicy.EARLIEST:
