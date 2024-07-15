@@ -1,11 +1,12 @@
 """
 Unit tests for tradewell.beavers.kafka
 """
+
 import dataclasses
 import io
 import logging
 import queue
-from typing import AnyStr, Callable, Optional, Tuple, Union
+from typing import AnyStr, Callable, Optional, Sequence, Tuple, Union
 
 import confluent_kafka
 import mock
@@ -25,6 +26,7 @@ from beavers.kafka import (
     _ConsumerManager,
     _get_message_ns,
     _get_previous_start_of_day,
+    _PartitionInfo,
     _poll_all,
     _ProducerManager,
     _resolve_offset_for_time,
@@ -940,14 +942,10 @@ def test_poll_all():
 class PassThroughKafkaMessageDeserializer:
     messages: list[confluent_kafka.Message] = dataclasses.field(default_factory=list)
 
-    def append_message(self, message: confluent_kafka.Message):
-        self.messages.append(message)
-
-    def flush(self) -> list[confluent_kafka.Message]:
-        """Convert queued messages to data"""
-        results = self.messages.copy()
-        self.messages.clear()
-        return results
+    def __call__(
+        self, messages: Sequence[confluent_kafka.Message]
+    ) -> Sequence[confluent_kafka.Message]:
+        return messages
 
 
 def test_from_xxx():
@@ -1336,10 +1334,31 @@ def test_producer_manager_create():
         assert producer_manager._producer is not None
 
 
-def test_consumer_manager_create():
-    with mock.patch("confluent_kafka.Consumer", autospec=True):
-        consumer_manager = _ConsumerManager.create({}, [], 500, timeout=None)
+def test_consumer_manager_create_with_topics():
+    with mock.patch(
+        "confluent_kafka.Consumer",
+        new=lambda *_: MockConsumer(
+            {"topic-1": topic_metadata("topic-1", [partition_metadata(0)])}
+        ),
+    ):
+        consumer_manager = _ConsumerManager.create(
+            {},
+            [
+                SourceTopic(
+                    "topic-1",
+                    PassThroughKafkaMessageDeserializer(),
+                    OffsetPolicy.LATEST,
+                )
+            ],
+            500,
+            timeout=None,
+        )
         assert consumer_manager._consumer is not None
+        assert consumer_manager._partition_info == {
+            TopicPartition("topic-1", 0): _PartitionInfo(
+                current_offset=0, live_offset=-1, timestamp_ns=0, paused=False
+            )
+        }
 
 
 def test_consumer_manager_create_partition_eof():

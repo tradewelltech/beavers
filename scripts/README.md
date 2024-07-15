@@ -18,6 +18,7 @@ kafka-console-producer --topic right --bootstrap-server=localhost:9092
 kafka-console-consumer \
     --topic=both \
     --bootstrap-server=localhost:9092 \
-    --property print.key=true
+    --property print.key=true \
+    --from-beginning    
 python -m scripts.kafka_test_bench --batch-size=2
 ```
