@@ -27,7 +27,10 @@ if TYPE_CHECKING:
         from beavers.pandas_wrapper import PandasWrapper
     except ImportError:
         PandasWrapper = None
-
+    try:
+        from beavers.perspective_wrapper import PerspectiveDagWrapper
+    except ImportError:
+        PerspectiveDagWrapper = None
 
 import pandas as pd
 
@@ -670,6 +673,14 @@ class Dag:
         from beavers.pandas_wrapper import PandasWrapper
 
         return PandasWrapper(self)
+
+    @cached_property
+    def psp(self) -> "PerspectiveDagWrapper":
+        """Returns the PerspectiveDagWrapper."""
+        # Import dynamically because of circular dependency
+        from beavers.perspective_wrapper import PerspectiveDagWrapper
+
+        return PerspectiveDagWrapper(self)
 
     def _add_stream(
         self,

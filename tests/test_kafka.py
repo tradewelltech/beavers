@@ -1,5 +1,5 @@
 """
-Unit tests for tradewell.beavers.kafka
+Unit tests for beavers.kafka
 """
 
 import dataclasses
