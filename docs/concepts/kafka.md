@@ -1,6 +1,6 @@
 # Live with Kafka
 
-This section explains how to a beavers application in real time using kafka.
+This section explains how to run a beavers application in real time using kafka.
 
 ## Count Word Example
 

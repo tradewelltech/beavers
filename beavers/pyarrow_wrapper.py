@@ -92,7 +92,7 @@ class _LatestTracker:
 
 @dataclasses.dataclass(frozen=True)
 class ArrowDagWrapper:
-    """Helper call for adding pyarrow Nodes to a Dag."""
+    """Helper for adding pyarrow Nodes to a Dag."""
 
     _dag: Dag
 

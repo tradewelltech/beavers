@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>{{table_config.name}} Beavers</title>
+        <link rel="icon" type="image/x-icon" href="/assets/favicon.ico" />
+        <link rel="shortcut icon" type="image/x-icon" href="/assets/favicon.ico" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no"
+        />
+        <script type="module" src="https://cdn.jsdelivr.net/npm/@finos/perspective@{{perspective_version}}/dist/cdn/perspective.js"></script>
+        <script type="module" src="https://cdn.jsdelivr.net/npm/@finos/perspective-viewer@{{perspective_version}}/dist/cdn/perspective-viewer.js"></script>
+        <script type="module" src="https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-datagrid@{{perspective_version}}/dist/cdn/perspective-viewer-datagrid.js"></script>
+        <script type="module" src="https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-d3fc@{{perspective_version}}/dist/cdn/perspective-viewer-d3fc.js" ></script>
+
+        <link
+                rel="stylesheet"
+                crossorigin="anonymous"
+                href="https://cdn.jsdelivr.net/npm/@finos/perspective-viewer@{{perspective_version}}/dist/css/pro.css"
+        />
+
+        <style>
+            body {
+                height: 100vh;
+                width: 100vw;
+                font-family: 'Roboto Mono';
+                overflow: scroll;
+            }
+            .perspective-table-class {
+                position: relative;
+                height: 100%;
+            }
+        </style>
+    </head>
+
+    <body>
+        <perspective-viewer id="viewer" class="perspective-table-class"> </perspective-viewer>
+
+        <script type="module">
+            import perspective from "https://cdn.jsdelivr.net/npm/@finos/perspective@{{perspective_version}}/dist/cdn/perspective.js";
+
+            window.addEventListener("DOMContentLoaded", async function () {
+                const viewer = document.getElementById("viewer");
+                const websocket_uri = "ws://" + window.location.host + "/websocket";
+                const websocket = perspective.websocket(websocket_uri);
+                websocket._ws.onclose = function () {
+                    viewer.style.display = "none"
+                }
+                const worker = perspective.worker();
+                const server_table = await websocket.open_table("{{table_config.name}}");
+                const server_view = await server_table.view();
+                await viewer.load(await worker.table(server_view, { index: "{{table_config.index}}" }));
+                let config = await viewer.save();
+
+                config.columns = {% raw json_encode(table_config.columns) %}
+                config.sort = {% raw json_encode(table_config.sort) %}
+                config.filter = {% raw json_encode(table_config.filters) %}
+
+                await viewer.restore(config);
+            });
+        </script>
+    </body>
+</html>
