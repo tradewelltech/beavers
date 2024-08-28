@@ -38,25 +38,40 @@
 
         <script type="module">
             import perspective from "https://cdn.jsdelivr.net/npm/@finos/perspective@{{perspective_version}}/dist/cdn/perspective.js";
-
             window.addEventListener("DOMContentLoaded", async function () {
                 const viewer = document.getElementById("viewer");
+
+                // Create a client that expects a Perspective server to accept
+                // Websocket connections at the specified URL.
                 const websocket_uri = "ws://" + window.location.host + "/websocket";
-                const websocket = perspective.websocket(websocket_uri);
-                websocket._ws.onclose = function () {
-                    viewer.style.display = "none"
-                }
-                const worker = perspective.worker();
-                const server_table = await websocket.open_table("{{table_config.name}}");
-                const server_view = await server_table.view();
-                await viewer.load(await worker.table(server_view, { index: "{{table_config.index}}" }));
+                const websocket = await perspective.websocket(websocket_uri);
+                // websocket._ws.onclose = function () {
+                //     viewer.style.display = "none"
+                // }
+
+                /* This shows Perspective running in "server mode": the `table`
+                variable is a proxy for the `Table` we created on the server.
+
+                All operations that are possible through the Javascript API are
+                possible on the Python API as well, thus calling `view()`,
+                `schema()`, `update()` etc on `const table` will pass those
+                operations to the Python `Table`, execute the commands,
+                and return the result back to Javascript.
+                */
+                const table = await websocket.open_table("{{table_config.name}}");
+
+                // Load this in the `<perspective-viewer>`.
+                viewer.load(table);
+
                 let config = await viewer.save();
 
+                config.name = "{% raw table_config.name %}"
                 config.columns = {% raw json_encode(table_config.columns) %}
                 config.sort = {% raw json_encode(table_config.sort) %}
                 config.filter = {% raw json_encode(table_config.filters) %}
 
                 await viewer.restore(config);
+                viewer.toggleConfig();
             });
         </script>
     </body>

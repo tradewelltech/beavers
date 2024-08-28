@@ -1,12 +1,11 @@
 import dataclasses
 import pathlib
-import threading
 from typing import Any, Literal, Optional, Sequence
 
 import perspective
 import pyarrow as pa
 import tornado
-from perspective import PerspectiveManager, PerspectiveTornadoHandler
+from perspective import PerspectiveTornadoHandler
 
 from beavers import Dag, Node
 from beavers.kafka import KafkaDriver
@@ -131,11 +130,11 @@ class _UpdateRunner:
         self.kafka_driver.run_cycle(0.0)
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass()
 class _PerspectiveNode:
     table_definition: PerspectiveTableDefinition
     schema: pa.Schema
-    table: perspective.Table = None
+    table: perspective.Table | None = None
 
     def __call__(self, table: pa.Table) -> None:
         """Pass the arrow data to perspective"""
@@ -168,38 +167,58 @@ class PerspectiveDagWrapper:
             _PerspectiveNode(
                 table_definition,
                 schema,
-                table=perspective.Table(
-                    _table_to_bytes(schema.empty_table()),
-                    limit=table_definition.limit,
-                    index=table_definition.index_column,
-                ),
+                table=None,
             )
         ).map(node)
 
 
+DATA_TYPES = [
+    (pa.types.is_integer, "int"),
+    (pa.types.is_floating, "float"),
+    (pa.types.is_boolean, "bool"),
+    (pa.types.is_date, "date"),
+    (pa.types.is_string, "string"),
+    (pa.types.is_timestamp, "datetime"),
+]
+
+
+def to_perspective_type(data_type: pa.DataType) -> Any:
+    for predicate, perspective_type in DATA_TYPES:
+        if predicate(data_type):
+            return perspective_type
+    raise TypeError(f"Unsupported type: {data_type}")
+
+
+def to_perspective_schema(schema: pa.Schema) -> dict[str, Any]:
+    return {f.name: to_perspective_type(f.type) for f in schema}
+
+
 def perspective_thread(
-    manager: perspective.PerspectiveManager,
+    perspective_server: perspective.Server,
     kafka_driver: KafkaDriver,
     nodes: list[_PerspectiveNode],
 ):
-    psp_loop = tornado.ioloop.IOLoop()
-
-    manager.set_loop_callback(psp_loop.add_callback)
+    local_client = perspective_server.new_local_client()
     for node in nodes:
-        manager.host_table(node.table_definition.name, node.table)
+        assert node.table is None
+        node.table = local_client.table(
+            to_perspective_schema(node.schema),
+            name=node.table_definition.name,
+            index=node.table_definition.index_column,
+        )
 
     callback = tornado.ioloop.PeriodicCallback(
         callback=_UpdateRunner(kafka_driver), callback_time=1_000
     )
     callback.start()
-    psp_loop.start()
 
 
-def create_web_application(
+def run_web_application(
     kafka_driver: KafkaDriver,
     assets_directory: str = ASSETS_DIRECTORY,
+    port: int = 8082,
 ) -> tornado.web.Application:
-    manager = PerspectiveManager()
+    server = perspective.Server()
 
     nodes: list[_PerspectiveNode] = []
     for node in kafka_driver._dag._nodes:
@@ -210,19 +229,12 @@ def create_web_application(
         nodes
     ), "Duplicate table name"
 
-    thread = threading.Thread(
-        target=perspective_thread,
-        args=(manager, kafka_driver, nodes),
-    )
-    thread.daemon = True
-    thread.start()
-
-    return tornado.web.Application(
+    web_app = tornado.web.Application(
         [
             (
                 r"/websocket",
                 PerspectiveTornadoHandler,
-                {"manager": manager, "check_origin": True},
+                {"perspective_server": server},
             ),
             (
                 r"/assets/(.*)",
@@ -237,9 +249,7 @@ def create_web_application(
         ],
         serve_traceback=True,
     )
-
-
-def run_web_application(web_app: tornado.web.Application, port: int):
     web_app.listen(port)
     loop = tornado.ioloop.IOLoop.current()
+    loop.call_later(0, perspective_thread, server, kafka_driver, nodes)
     loop.start()

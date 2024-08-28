@@ -63,7 +63,7 @@ def create_test_dag() -> Dag:
 
 # --8<-- [start:run]
 from beavers.kafka import KafkaDriver, SourceTopic
-from beavers.perspective_wrapper import run_web_application, create_web_application
+from beavers.perspective_wrapper import run_web_application
 
 
 def run_dashboard(
@@ -76,7 +76,7 @@ def run_dashboard(
 
     dag = create_test_dag()
 
-    driver = KafkaDriver.create(
+    kafka_driver = KafkaDriver.create(
         dag=dag,
         producer_config={},
         consumer_config=consumer_config,
@@ -86,7 +86,7 @@ def run_dashboard(
         sink_topics={},
     )
 
-    run_web_application(create_web_application(driver), port=port)
+    run_web_application(kafka_driver=kafka_driver, port=port)
 
 
 # --8<-- [end:run]
