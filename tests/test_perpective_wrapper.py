@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import pyarrow as pa
 import pytest
 from mock import mock
-from perspective import PerspectiveManager
+from perspective import Server
 from tornado.testing import AsyncHTTPTestCase
 from tornado.web import Application
 
@@ -78,6 +78,11 @@ def test_add_node():
         state, PERSPECTIVE_TABLE_DEFINITION, schema=PERSPECTIVE_TABLE_SCHEMA
     )
 
+    for node in dag._nodes:
+        if isinstance(node._function, _PerspectiveNode):
+            assert node._function.table is None
+            node._function.table = MagicMock()
+
     dag.execute()
 
     nodes = [
@@ -109,7 +114,7 @@ class FakeLoop:
 
 @mock.patch("tornado.ioloop.IOLoop", FakeLoop)
 def test_perspective_thread():
-    manager = PerspectiveManager()
+    manager = Server()
 
     perspective_thread(manager, MagicMock(), [])
 
@@ -134,4 +139,4 @@ class TestHandler(AsyncHTTPTestCase):
     def test_table(self):
         response = self.fetch("/")
         assert response.code == 200
-        assert b'{ index: "col_1" }' in response.body
+        assert b'["col_1", "col_2"]' in response.body
