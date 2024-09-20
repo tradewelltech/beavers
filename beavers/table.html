@@ -48,19 +48,10 @@
                 // websocket._ws.onclose = function () {
                 //     viewer.style.display = "none"
                 // }
+                window._websocket = websocket
 
-                /* This shows Perspective running in "server mode": the `table`
-                variable is a proxy for the `Table` we created on the server.
-
-                All operations that are possible through the Javascript API are
-                possible on the Python API as well, thus calling `view()`,
-                `schema()`, `update()` etc on `const table` will pass those
-                operations to the Python `Table`, execute the commands,
-                and return the result back to Javascript.
-                */
                 const table = await websocket.open_table("{{table_config.name}}");
 
-                // Load this in the `<perspective-viewer>`.
                 viewer.load(table);
 
                 let config = await viewer.save();

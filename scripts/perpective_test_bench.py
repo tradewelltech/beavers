@@ -17,7 +17,7 @@ def perspective_test_bench(
     port: int,
     consumer_config: dict,
 ):
-    run_dashboard(topic, port, consumer_config)
+    run_dashboard(topic=topic, port=port, consumer_config=consumer_config)
 
 
 if __name__ == "__main__":

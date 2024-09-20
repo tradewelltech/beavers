@@ -10,6 +10,9 @@ import pyarrow as pa
 KEY_VALUE_SCHEMA = pa.schema(
     [
         pa.field("timestamp", pa.timestamp("ms", "UTC")),
+        pa.field("topic", pa.string()),
+        pa.field("partition", pa.int32()),
+        pa.field("offset", pa.int64()),
         pa.field("key", pa.string()),
         pa.field("value", pa.string()),
     ]
@@ -26,6 +29,9 @@ def kafka_messages_to_pyarrow(
     return pa.table(
         [
             [m.timestamp()[1] for m in messages],
+            [m.topic() for m in messages],
+            [m.partition() for m in messages],
+            [m.offset() for m in messages],
             [None if m.key() is None else m.key().decode("utf-8") for m in messages],
             [
                 None if m.value() is None else m.value().decode("utf-8")
