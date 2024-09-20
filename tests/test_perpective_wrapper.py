@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock
 
+import perspective
 import pyarrow as pa
 import pytest
 from mock import mock
@@ -9,6 +10,7 @@ from tornado.web import Application
 
 from beavers import Dag
 from beavers.perspective_wrapper import (
+    DATA_TYPES,
     PerspectiveTableDefinition,
     TableRequestHandler,
     _PerspectiveNode,
@@ -140,3 +142,10 @@ class TestHandler(AsyncHTTPTestCase):
         response = self.fetch("/")
         assert response.code == 200
         assert b'["col_1", "col_2"]' in response.body
+
+
+def test_schema():
+    server = perspective.Server()
+    client = server.new_local_client()
+
+    client.table({str(i): v[1] for i, v in enumerate(DATA_TYPES)})

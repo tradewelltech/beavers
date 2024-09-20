@@ -44,7 +44,7 @@ class PerspectiveTableDefinition:
         default_factory=list
     )
     filters: list[tuple[str, str, Any]] = dataclasses.field(default_factory=list)
-    hidden_columns: Sequence[str] = tuple()
+    hidden_columns: Sequence[str] = ()
     limit: Optional[int] = None
 
     def validate(self, schema: pa.Schema):
@@ -173,9 +173,9 @@ class PerspectiveDagWrapper:
 
 
 DATA_TYPES = [
-    (pa.types.is_integer, "int"),
+    (pa.types.is_integer, "integer"),
     (pa.types.is_floating, "float"),
-    (pa.types.is_boolean, "bool"),
+    (pa.types.is_boolean, "boolean"),
     (pa.types.is_date, "date"),
     (pa.types.is_string, "string"),
     (pa.types.is_timestamp, "datetime"),
