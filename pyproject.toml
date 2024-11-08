@@ -1,96 +1,13 @@
-[tool.poetry]
-name = "beavers"
-version = "0.0.0"
-description = "Python stream processing"
-authors = ["Tradewell Tech <engineering@tradewelltech.co>"]
-maintainers = ["0x26res <0x26res@gmail.com>"]
-packages = [
-    { include = "beavers" }
-]
-readme = "README.md"
-license = "Apache-2.0"
-repository = "https://github.com/tradewelltech/beavers"
-documentation = "https://beavers.readthedocs.io/en/latest/"
-classifiers = [
-    "Development Status :: 5 - Production/Stable",
-    "License :: OSI Approved :: Apache Software License",
-    "Natural Language :: English",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-]
-keywords = ["apache-arrow", "streaming", "data"]
-
-[tool.poetry.dependencies]
-pandas = ">1.4.0"
-confluent_kafka = ">=2.1.1"
-python = ">=3.10,<3.13"
-pyarrow = ">=12.0"
-perspective-python = ">=3.0.0"
-tornado = "*"
-
-[tool.poetry.group.dev.dependencies]
-black = ">=22.10.0"
-coverage = ">=6.5.0"
-flake8 = ">=5.0.4"
-isort = ">=5.10.1"
-pip-tools = ">=6.12.1"
-pre-commit = ">=2.20.0"
-pylint = ">=2.15.0"
-pytest = ">=7.2.0"
-click = ">=8.1.7"
-mock = "*"
-git-changelog = ">=2.2.0"
-tabulate = "*"
-pytest-asyncio = "*"
-
-
-[tool.poetry.group.docs]
-optional = true
-
-[tool.poetry.group.docs.dependencies]
-markdown-include = "*"
-mkdocs = ">=1.5.3"
-mkdocs-material-extensions = "*"
-mkdocs-material = ">=9.3.2"
-mkdocstrings = { version = ">=0.21.2", extras = ["python"] }
-pymdown-extensions = "*"
-tornado = "*"
-
 [build-system]
-requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]
 build-backend = "poetry_dynamic_versioning.backend"
-
-[tool.black]
-target-version = ["py310"]
-exclude = "venv/|tox/"
-
-[tool.isort]
-profile = "black"
-src_paths = ["beavers", "tests"]
-known_first_party = ["beavers"]
-skip = [".gitignore"]
+requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]
 
 [tool.bandit]
 skips = ["B101", "B311"]
 
-[tool.poetry-dynamic-versioning]
-enable = true
-
-[tool.poetry-dynamic-versioning.substitution]
-files = ["*/__init__.py"]
-folders = [{ path = "beavers" }]
-
-[tool.ruff]
-line-length = 88
-
-[tool.pydocstyle]
-ignore = ["D102", "D107", "D203", "D212"]
-
-[tool.poetry.extras]
-pyarrow = ["pyarrow"]
-confluent_kafka = ["confluent_kafka"]
-perspective-python = ["perspective-python", "tornado"]
+[tool.black]
+exclude = "venv/|tox/"
+target-version = ["py310"]
 
 [tool.coverage.report]
 # https://github.com/nedbat/coveragepy/issues/831#issuecomment-517778185
@@ -98,10 +15,89 @@ exclude_lines = ["if TYPE_CHECKING:"]
 
 [tool.coverage.run]
 omit = [
-    # This is hard to test, and the API is about to change a lot
-    "*/beavers/perspective_wrapper.py"
+  # This is hard to test, and the API is about to change a lot
+  "*/beavers/perspective_wrapper.py"
 ]
 
+[tool.poetry]
+authors = ["Tradewell Tech <engineering@tradewelltech.co>"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "License :: OSI Approved :: Apache Software License",
+  "Natural Language :: English",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12"
+]
+description = "Python stream processing"
+documentation = "https://beavers.readthedocs.io/en/latest/"
+keywords = ["apache-arrow", "streaming", "data"]
+license = "Apache-2.0"
+maintainers = ["0x26res <0x26res@gmail.com>"]
+name = "beavers"
+packages = [
+  {include = "beavers"}
+]
+readme = "README.md"
+repository = "https://github.com/tradewelltech/beavers"
+version = "0.0.0"
+
+[tool.poetry.dependencies]
+confluent_kafka = ">=2.1.1"
+pandas = ">1.4.0"
+perspective-python = ">=3.0.0"
+pyarrow = ">=12.0"
+python = ">=3.10,<3.13"
+tornado = "*"
+
+[tool.poetry.extras]
+confluent_kafka = ["confluent_kafka"]
+perspective-python = ["perspective-python", "tornado"]
+pyarrow = ["pyarrow"]
+
+[tool.poetry.group.dev.dependencies]
+black = ">=22.10.0"
+click = ">=8.1.7"
+coverage = ">=6.5.0"
+flake8 = ">=5.0.4"
+git-changelog = ">=2.2.0"
+isort = ">=5.10.1"
+mock = "*"
+pip-tools = ">=6.12.1"
+pre-commit = ">=2.20.0"
+pylint = ">=2.15.0"
+pytest = ">=7.2.0"
+pytest-asyncio = "*"
+tabulate = "*"
+
+[tool.poetry.group.docs]
+optional = true
+
+[tool.poetry.group.docs.dependencies]
+markdown-include = "*"
+mkdocs = ">=1.5.3"
+mkdocs-material = ">=9.3.2"
+mkdocs-material-extensions = "*"
+mkdocstrings = {version = ">=0.21.2", extras = ["python"]}
+pymdown-extensions = "*"
+tornado = "*"
+
+[tool.poetry-dynamic-versioning]
+enable = true
+
+[tool.poetry-dynamic-versioning.substitution]
+files = ["*/__init__.py"]
+folders = [{path = "beavers"}]
+
+[tool.pydocstyle]
+ignore = ["D102", "D107", "D203", "D212"]
+
 [tool.pytest.ini_options]
-asyncio_mode= "auto"
 asyncio_default_fixture_loop_scope = "function"
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint.isort]
+known-first-party = ["beavers", "tradewell_proto"]

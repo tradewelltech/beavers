@@ -6,15 +6,18 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 <!-- insertion marker -->
-## Unreleased
+## [v0.10.0](https://github.com/tradewelltech/beavers/releases/tag/v0.10.0) - 2024-11-11
 
-<small>[Compare with latest](https://github.com/tradewelltech/beavers/compare/v0.9.1...HEAD)</small>
+<small>[Compare with v0.9.1](https://github.com/tradewelltech/beavers/compare/v0.9.1...v0.10.0)</small>
+
+### Added
+
+- Add latest version of everything ([f339a52](https://github.com/tradewelltech/beavers/commit/f339a52ac8046e72f64ba4f838259d90b0791a6d) by aandres3).
 
 ### Fixed
 
-- Fix wrong offset resolution ([16f3dad](https://github.com/tradewelltech/beavers/commit/16f3dad52b819d2981310e15f4fb2b0db36d2086) by aandres3).
+- Fix wrong offset resolution (#65) ([610bad6](https://github.com/tradewelltech/beavers/commit/610bad6cdadb29014ddc098b79e2ca5df18f1c71) by 0x26res).
 
-<!-- insertion marker -->
 
 ## [v0.9.1](https://github.com/tradewelltech/beavers/releases/tag/v0.9.1) - 2024-09-20
 

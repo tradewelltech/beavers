@@ -1,6 +1,7 @@
 import json
 
 import click
+
 from examples.perspective_concepts import run_dashboard
 
 
