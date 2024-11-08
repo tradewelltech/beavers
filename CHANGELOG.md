@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 <!-- insertion marker -->
+## Unreleased
+
+<small>[Compare with latest](https://github.com/tradewelltech/beavers/compare/v0.9.1...HEAD)</small>
+
+### Fixed
+
+- Fix wrong offset resolution ([16f3dad](https://github.com/tradewelltech/beavers/commit/16f3dad52b819d2981310e15f4fb2b0db36d2086) by aandres3).
+
+<!-- insertion marker -->
+
 ## [v0.9.1](https://github.com/tradewelltech/beavers/releases/tag/v0.9.1) - 2024-09-20
 
 <small>[Compare with v0.9.0](https://github.com/tradewelltech/beavers/compare/v0.9.0...v0.9.1)</small>
