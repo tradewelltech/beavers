@@ -705,8 +705,9 @@ def _resolve_offset_for_time(
     )
     return {
         confluent_kafka.TopicPartition(topic=tp.topic, partition=tp.partition): (
-            tp.offset if tp.offset > 0 else (watermarks[tp][1] - 1),
-            watermarks[tp][1] - 1,
+            (tp.offset, watermarks[tp][1] - 1)
+            if tp.offset >= 0
+            else (watermarks[tp][1], watermarks[tp][1])
         )
         for tp in offset_for_time
     }

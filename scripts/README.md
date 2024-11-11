@@ -21,6 +21,7 @@ The "timestamp" of the output messages should be in order across topics when rep
 ```shell
 docker exec -it simple_kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server=localhost:9092 --create --topic=left --partitions=1 --replication-factor=1 
 docker exec -it simple_kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server=localhost:9092 --create --topic=right --partitions=1 --replication-factor=1 
+docker exec -it simple_kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server=localhost:9092 --create --topic=both --partitions=1 --replication-factor=1 
 ```
 
 ### Run the Beavers job
@@ -43,7 +44,7 @@ docker exec -it simple_kafka /opt/kafka/bin/kafka-console-consumer.sh \
   --bootstrap-server=localhost:9092 \
   --topic=both \
   --property print.key=true \
-  --from-beginning    
+  --from-beginning
 ```
 
 ## `perpective_test_bench.py`

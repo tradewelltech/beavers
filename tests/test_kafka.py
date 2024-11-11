@@ -1407,7 +1407,7 @@ def test_resolve_offset_for_time_minus_one():
     consumer._offsets_for_time[(tp1, millis)] = TopicPartition("topic-1", 0, -1)
     assert _resolve_offset_for_time(
         timestamp, consumer, {tp1: (40, 80)}, timeout=1.0
-    ) == {tp1: (79, 79)}
+    ) == {tp1: (80, 80)}
 
     consumer._offsets_for_time[(tp1, millis)] = TopicPartition("topic-1", 0, 70)
     assert _resolve_offset_for_time(
