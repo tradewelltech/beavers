@@ -5,7 +5,7 @@ from typing import Any, Literal, Optional, Sequence
 import perspective
 import pyarrow as pa
 import tornado
-from perspective import PerspectiveTornadoHandler
+from perspective.handlers.tornado import PerspectiveTornadoHandler
 
 from beavers import Dag, Node
 from beavers.kafka import KafkaDriver

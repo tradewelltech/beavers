@@ -1,7 +1,7 @@
 import pandas as pd
-from examples import etfs
 
 from beavers.testing import DagTestBench
+from examples import etfs
 
 
 def test_run_dag():
