@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 <!-- insertion marker -->
+## [v0.11.0](https://github.com/tradewelltech/beavers/releases/tag/v0.11.0) - 2024-11-15
+
+<small>[Compare with v0.10.0](https://github.com/tradewelltech/beavers/compare/v0.10.0...v0.11.0)</small>
+
+### Added
+
+- Add python 3.13 ([1984bb2](https://github.com/tradewelltech/beavers/commit/1984bb2c7b14126084d5497243418f8bc0123494) by aandres3).
+
+### Fixed
+
+- Fix perspective html (#70) ([ebc090d](https://github.com/tradewelltech/beavers/commit/ebc090d5a9ac7bbf31384a826cf94326426386e0) by 0x26res).
+
 ## [v0.10.0](https://github.com/tradewelltech/beavers/releases/tag/v0.10.0) - 2024-11-11
 
 <small>[Compare with v0.9.1](https://github.com/tradewelltech/beavers/compare/v0.9.1...v0.10.0)</small>
