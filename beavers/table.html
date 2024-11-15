@@ -41,27 +41,21 @@
             window.addEventListener("DOMContentLoaded", async function () {
                 const viewer = document.getElementById("viewer");
 
-                // Create a client that expects a Perspective server to accept
-                // Websocket connections at the specified URL.
                 const websocket_uri = "ws://" + window.location.host + "/websocket";
                 const websocket = await perspective.websocket(websocket_uri);
-                // websocket._ws.onclose = function () {
-                //     viewer.style.display = "none"
-                // }
-
                 const table = await websocket.open_table("{{table_config.name}}");
 
                 viewer.load(table);
 
                 let config = await viewer.save();
 
-                config.name = "{% raw table_config.name %}"
-                config.columns = {% raw json_encode(table_config.columns) %}
-                config.sort = {% raw json_encode(table_config.sort) %}
-                config.filter = {% raw json_encode(table_config.filters) %}
+                config.name = "{{table_config.name}}";
+                config.title = "{{table_config.name}}";
+                config.columns = {% raw json_encode(table_config.columns) %};
+                config.sort = {% raw json_encode(table_config.sort) %};
+                config.filter = {% raw json_encode(table_config.filters) %};
 
                 await viewer.restore(config);
-                viewer.toggleConfig();
             });
         </script>
     </body>
