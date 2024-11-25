@@ -83,6 +83,10 @@ mkdocstrings = {version = ">=0.21.2", extras = ["python"]}
 pymdown-extensions = "*"
 tornado = "*"
 
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/tradewelltech/beavers/issues"
+"Changelog" = "https://github.com/tradewelltech/beavers/blob/main/CHANGELOG.md"
+
 [tool.poetry-dynamic-versioning]
 enable = true
 
