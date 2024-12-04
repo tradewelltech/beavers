@@ -9,6 +9,7 @@
 [![Downloads][downloads-image]][downloads-url]
 [![Downloads][downloads-month-image]][downloads-month-url]
 [![Code style: black][codestyle-image]][codestyle-url]
+[![snyk][snyk-image]][snyk-url]
 
 ![Beavers Logo][5]
 
