@@ -3,7 +3,7 @@ import pyarrow.compute as pc
 import pytest
 
 from beavers import Dag
-from beavers.pyarrow_wrapper import _concat_arrow_arrays, _get_latest, _LatestTracker
+from beavers.pyarrow_wrapper import _concat_arrow_arrays, _get_last_by, _LastByKey
 
 SIMPLE_SCHEMA = pa.schema(
     [
@@ -107,22 +107,22 @@ def test_get_latest():
     table = pa.table(
         [[1, 2, 3, 1, 2], ["a", "b", "c", "d", "e"], [0] * 5], schema=SIMPLE_SCHEMA
     )
-    assert _get_latest(table, ["col1"]) == table[2:]
-    assert _get_latest(table, ["col1", "col2"]) == table
+    assert _get_last_by(table, ["col1"]) == table[2:]
+    assert _get_last_by(table, ["col1", "col2"]) == table
 
 
-def test_get_latest_batches():
+def test_get_last_by_batches():
     table = pa.concat_tables([SIMPLE_TABLE, SIMPLE_TABLE])
-    assert _get_latest(table, ["col1"]) == SIMPLE_TABLE
+    assert _get_last_by(table, ["col1"]) == SIMPLE_TABLE
 
 
-def test_get_latest_all_columns():
+def test_get_last_by_all_columns():
     table = pa.concat_tables([SIMPLE_TABLE, SIMPLE_TABLE])
-    assert _get_latest(table, ["col1", "col2"]) == SIMPLE_TABLE
+    assert _get_last_by(table, ["col1", "col2"]) == SIMPLE_TABLE
 
 
 def test_latest_tracker():
-    tracker = _LatestTracker(["col1"], SIMPLE_SCHEMA.empty_table())
+    tracker = _LastByKey(["col1"], SIMPLE_SCHEMA.empty_table())
 
     assert tracker(SIMPLE_SCHEMA.empty_table()) == SIMPLE_SCHEMA.empty_table()
     assert tracker(SIMPLE_TABLE) == SIMPLE_TABLE
@@ -131,10 +131,10 @@ def test_latest_tracker():
     )
 
 
-def test_latest_by_keys():
+def test_last_by_keys():
     dag = Dag()
     source = dag.pa.source_table(SIMPLE_SCHEMA)
-    latest = dag.pa.latest_by_keys(source, ["col1"])
+    latest = dag.pa.last_by_keys(source, ["col1"])
 
     dag.execute()
     assert latest.get_value() == SIMPLE_SCHEMA.empty_table()
@@ -153,28 +153,28 @@ def test_latest_by_keys():
     )
 
 
-def test_latest_by_keys_bad():
+def test_last_by_keys_bad():
     dag = Dag()
 
     with pytest.raises(
         AttributeError, match=r"'str' object has no attribute '_get_empty'"
     ):
-        dag.pa.latest_by_keys("Not a node", ["col1"])
+        dag.pa.last_by_keys("Not a node", ["col1"])
     with pytest.raises(TypeError, match=r"Argument should be a Node\[pa.Table\]"):
-        dag.pa.latest_by_keys(dag.source_stream(), ["col1"])
+        dag.pa.last_by_keys(dag.source_stream(), ["col1"])
     with pytest.raises(TypeError, match=r"Argument should be a stream Node"):
-        dag.pa.latest_by_keys(dag.state(lambda: None).map(), ["col1"])
+        dag.pa.last_by_keys(dag.state(lambda: None).map(), ["col1"])
 
     source = dag.pa.source_table(SIMPLE_SCHEMA)
 
     with pytest.raises(TypeError, match="123"):
-        dag.pa.latest_by_keys(source, 123)
+        dag.pa.last_by_keys(source, 123)
     with pytest.raises(TypeError, match="123"):
-        dag.pa.latest_by_keys(source, [123])
+        dag.pa.last_by_keys(source, [123])
     with pytest.raises(
         TypeError, match=r"field colz no in schema: \['col1', 'col2', 'col3'\]"
     ):
-        dag.pa.latest_by_keys(source, ["colz"])
+        dag.pa.last_by_keys(source, ["colz"])
 
 
 def test_get_column():

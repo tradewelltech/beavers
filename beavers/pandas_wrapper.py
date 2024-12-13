@@ -24,7 +24,7 @@ def _get_stream_dtypes(node: Node[pd.DataFrame]) -> pd.Series:
 
 
 @dataclasses.dataclass()
-class _LatestTracker:
+class _LastTracker:
     key_columns: list[str]
     current: pd.DataFrame
 
@@ -56,11 +56,11 @@ class PandasWrapper:
     ) -> NodePrototype[pd.DataFrame]:
         return self._dag.stream(function, empty=_empty_df(dtypes))
 
-    def latest_by_keys(
+    def last_by_keys(
         self, stream: Node[pd.DataFrame], keys: list[str]
     ) -> Node[pd.DataFrame]:
         """Build a state of the latest row by keys."""
         dtypes = _get_stream_dtypes(stream)
         for key in keys:
             assert key in dtypes, key
-        return self._dag.state(_LatestTracker(keys, _empty_df(dtypes))).map(stream)
+        return self._dag.state(_LastTracker(keys, _empty_df(dtypes))).map(stream)

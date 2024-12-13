@@ -31,6 +31,10 @@ if TYPE_CHECKING:
         from beavers.perspective_wrapper import PerspectiveDagWrapper
     except ImportError:
         PerspectiveDagWrapper = None
+    try:
+        from beavers.polars_wrapper import PolarsDagWrapper
+    except ImportError:
+        PolarsDagWrapper = None
 
 import pandas as pd
 
@@ -665,6 +669,13 @@ class Dag:
         from beavers.pyarrow_wrapper import ArrowDagWrapper
 
         return ArrowDagWrapper(self)
+
+    @cached_property
+    def pl(self) -> "PolarsDagWrapper":
+        # Import dynamically because of circular dependency
+        from beavers.polars_wrapper import PolarsDagWrapper
+
+        return PolarsDagWrapper(self)
 
     @cached_property
     def pd(self) -> "PandasWrapper":
