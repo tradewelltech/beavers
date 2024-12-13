@@ -1,17 +1,20 @@
 # ruff: noqa: E402
 # isort: skip_file
 
-# --8<-- [start:business_logic_price]
-import pyarrow as pa
+import polars.testing
 
-PRICE_SCHEMA = pa.schema(
+
+# --8<-- [start:business_logic_price]
+import polars as pl
+
+PRICE_SCHEMA = pl.Schema(
     [
-        pa.field("ticker", pa.string()),
-        pa.field("price", pa.float64()),
+        ("ticker", pl.String()),
+        ("price", pl.Float64()),
     ]
 )
 
-price_table = pa.Table.from_pylist(
+price_table = pl.DataFrame(
     [
         {"ticker": "AAPL", "price": 174.79},
         {"ticker": "GOOGL", "price": 130.25},
@@ -26,16 +29,16 @@ price_table = pa.Table.from_pylist(
 # print(price_table.to_pandas().to_markdown(index=False))
 
 # --8<-- [start:business_logic_composition]
-ETF_COMPOSITION_SCHEMA = pa.schema(
+ETF_COMPOSITION_SCHEMA = pl.Schema(
     [
-        pa.field("etf", pa.string()),
-        pa.field("ticker", pa.string()),
-        pa.field("quantity", pa.float64()),
+        ("etf", pl.String()),
+        ("ticker", pl.String()),
+        ("quantity", pl.Float64()),
     ]
 )
 
 
-etf_composition_table = pa.Table.from_pylist(
+etf_composition_table = pl.DataFrame(
     [
         {"etf": "TECH", "ticker": "AAPL", "quantity": 2.0},
         {"etf": "TECH", "ticker": "GOOGL", "quantity": 2.0},
@@ -51,26 +54,23 @@ etf_composition_table = pa.Table.from_pylist(
 
 
 # --8<-- [start:business_logic_calculation]
-import pyarrow.compute as pc
-
-ETF_VALUE_SCHEMA = pa.schema(
+ETF_VALUE_SCHEMA = pl.Schema(
     [
-        pa.field("etf", pa.string()),
-        pa.field("value", pa.float64()),
+        ("etf", pl.String()),
+        ("value", pl.Float64()),
     ]
 )
 
 
-def calculate_etf_value(etf_composition: pa.Table, price: pa.Table) -> pa.Table:
-    positions_with_prices = etf_composition.join(price, keys=["ticker"])
-    values = pc.multiply(
-        positions_with_prices["price"], positions_with_prices["quantity"]
-    )
-    positions_with_prices = positions_with_prices.append_column("value", values)
+def calculate_etf_value(
+    etf_composition: pl.DataFrame, price: pl.DataFrame
+) -> pl.DataFrame:
     return (
-        positions_with_prices.group_by("etf")
-        .aggregate([("value", "sum")])
-        .rename_columns(ETF_VALUE_SCHEMA.names)
+        etf_composition.join(price, on=["ticker"])
+        .select(pl.col("etf"), (pl.col("price") * pl.col("quantity")).alias("value"))
+        .group_by("etf", maintain_order=True)
+        .agg(pl.col("value").sum())
+        .cast(ETF_VALUE_SCHEMA)
     )
 
 
@@ -86,15 +86,15 @@ etf_value_table = calculate_etf_value(
 from beavers import Dag
 
 dag = Dag()
-price_source = dag.pa.source_table(schema=PRICE_SCHEMA, name="price")
-etf_composition_source = dag.pa.source_table(
+price_source = dag.pl.source_table(schema=PRICE_SCHEMA, name="price")
+etf_composition_source = dag.pl.source_table(
     schema=ETF_COMPOSITION_SCHEMA, name="etf_composition"
 )
 # --8<-- [end:dag_source]
 
 # --8<-- [start:dag_state]
-price_state = dag.pa.last_by_keys(price_source, ["ticker"])
-etf_composition_state = dag.pa.last_by_keys(
+price_state = dag.pl.last_by_keys(price_source, ["ticker"])
+etf_composition_state = dag.pl.last_by_keys(
     etf_composition_source,
     ["etf", "ticker"],
 )
@@ -113,12 +113,12 @@ etf_value_state = dag.state(calculate_etf_value).map(
 price_source.set_stream(price_table)
 etf_composition_source.set_stream(etf_composition_table)
 dag.execute()
-assert etf_value_state.get_value() == etf_value_table
+polars.testing.assert_frame_equal(etf_value_state.get_value(), etf_value_table)
 # --8<-- [end:dag_test]
 
 
 # --8<-- [start:spurious_update]
-new_price_updates = pa.Table.from_pylist(
+new_price_updates = pl.DataFrame(
     [{"ticker": "GME", "price": 123.0}],
     PRICE_SCHEMA,
 )
@@ -129,7 +129,7 @@ assert etf_value_state.get_cycle_id() == dag.get_cycle_id()
 # --8<-- [end:spurious_update]
 
 # --8<-- [start:updated_because_of_composition]
-updated_because_of_composition = dag.pa.get_column(
+updated_because_of_composition = dag.pl.get_series(
     etf_composition_source,
     "etf",
 )
@@ -138,52 +138,46 @@ updated_because_of_composition = dag.pa.get_column(
 
 # --8<-- [start:updated_because_of_price]
 def get_etf_to_update_because_of_price(
-    etf_composition_state: pa.Table, price_update: pa.Table
-) -> pa.Array:
-    updated_tickers = pc.unique(price_update["ticker"])
-    return pc.unique(
-        etf_composition_state.filter(
-            pc.is_in(etf_composition_state["ticker"], updated_tickers)
-        )["etf"]
-    )
+    etf_composition_state: pl.DataFrame, price_update: pl.DataFrame
+) -> pl.Series:
+    updated_tickers = price_update["ticker"].unique()
+    return etf_composition_state.filter(pl.col("ticker").is_in(updated_tickers))[
+        "etf"
+    ].unique()
 
 
 updated_because_of_price = dag.stream(
-    get_etf_to_update_because_of_price, pa.array([], pa.string())
+    get_etf_to_update_because_of_price, empty=pl.Series(name="etf", dtype=pl.String())
 ).map(etf_composition_state, price_source)
 # --8<-- [end:updated_because_of_price]
 
 # --8<-- [start:update_all]
-stale_etfs = dag.pa.concat_arrays(
+stale_etfs = dag.pl.concat_series(
     updated_because_of_price, updated_because_of_composition
 )
 
 
 def get_composition_for_etfs(
-    etf_composition_state: pa.Table, etfs: pa.Array
-) -> pa.Table:
-    return etf_composition_state.filter(
-        pc.is_in(
-            etf_composition_state["etf"],
-            etfs,
-        )
-    )
+    etf_composition_state: pl.DataFrame,
+    etfs: pl.Series,
+) -> pl.DataFrame:
+    return etf_composition_state.filter(pl.col("etf").is_in(etfs))
 
 
-stale_etf_compositions = dag.pa.table_stream(
+stale_etf_compositions = dag.pl.table_stream(
     get_composition_for_etfs, ETF_COMPOSITION_SCHEMA
 ).map(etf_composition_state, stale_etfs)
 
-updated_etf = dag.pa.table_stream(calculate_etf_value, ETF_VALUE_SCHEMA).map(
+updated_etf = dag.pl.table_stream(calculate_etf_value, ETF_VALUE_SCHEMA).map(
     stale_etf_compositions, price_state
 )
 # --8<-- [end:update_all]
 
 # --8<-- [start:update_all_test]
 price_source.set_stream(
-    pa.Table.from_pylist(
+    pl.DataFrame(
         [{"ticker": "MSFT", "price": 317.05}],
-        PRICE_SCHEMA,
+        schema=PRICE_SCHEMA,
     )
 )
 dag.execute()
