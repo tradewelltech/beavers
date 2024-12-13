@@ -47,6 +47,7 @@ version = "0.0.0"
 confluent_kafka = ">=2.1.1"
 pandas = ">1.4.0"
 perspective-python = ">=3.0.0"
+polars = "*"
 pyarrow = ">=12.0"
 python = ">=3.10,<4"
 tornado = "*"
@@ -54,6 +55,7 @@ tornado = "*"
 [tool.poetry.extras]
 confluent_kafka = ["confluent_kafka"]
 perspective-python = ["perspective-python", "tornado"]
+polars = ["polars"]
 pyarrow = ["pyarrow"]
 
 [tool.poetry.group.dev.dependencies]

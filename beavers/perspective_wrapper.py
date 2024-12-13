@@ -217,7 +217,7 @@ def run_web_application(
     kafka_driver: KafkaDriver,
     assets_directory: str = ASSETS_DIRECTORY,
     port: int = 8082,
-) -> tornado.web.Application:
+) -> None:
     server = perspective.Server()
 
     nodes: list[_PerspectiveNode] = []
