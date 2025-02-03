@@ -312,8 +312,7 @@ def _create_sinks(
     sink_names = sorted(data_sink_providers.keys())
     if nodes_names != sink_names:
         raise ValueError(
-            "Sink node and DataSink names don't match: "
-            f"{nodes_names}  vs {sink_names}"
+            f"Sink node and DataSink names don't match: {nodes_names}  vs {sink_names}"
         )
     return [
         _ReplaySink(name, sink_nodes[name], data_sink_providers[name](replay_context))

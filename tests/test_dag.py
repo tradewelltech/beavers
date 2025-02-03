@@ -246,16 +246,16 @@ def test_time():
 
     time2 = time0 + pd.to_timedelta("2s")
     dag.execute(time2)
-    assert add_time.get_value() == [
-        ("a", time1)
-    ], "Change of time isn't notified to clean/not stale node"
+    assert add_time.get_value() == [("a", time1)], (
+        "Change of time isn't notified to clean/not stale node"
+    )
 
     time3 = time1 + pd.to_timedelta("4s")
     source.set_stream(["b"])
     dag.execute(time3)
-    assert add_time.get_value() == [
-        ("b", time3)
-    ], "Change of time is notified to stale node"
+    assert add_time.get_value() == [("b", time3)], (
+        "Change of time is notified to stale node"
+    )
 
 
 def test_cutoff_update():

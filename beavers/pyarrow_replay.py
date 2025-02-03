@@ -18,9 +18,9 @@ class ArrowTableDataSource(DataSource[pa.Table]):
         self._timestamp_column = timestamp_extractor(table).to_pandas(
             date_as_object=False
         )
-        assert (
-            self._timestamp_column.is_monotonic_increasing
-        ), "Timestamp column should be monotonic increasing"
+        assert self._timestamp_column.is_monotonic_increasing, (
+            "Timestamp column should be monotonic increasing"
+        )
         self._index = 0
 
     def read_to(self, timestamp: pd.Timestamp) -> pa.Table:

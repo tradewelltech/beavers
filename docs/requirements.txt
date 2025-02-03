@@ -4,13 +4,13 @@
 #
 #    pip-compile ./requirements.in
 #
-babel==2.16.0
+babel==2.17.0
     # via mkdocs-material
-certifi==2024.8.30
+certifi==2025.1.31
     # via requests
-charset-normalizer==3.4.0
+charset-normalizer==3.4.1
     # via requests
-click==8.1.7
+click==8.1.8
     # via
     #   mkdocs
     #   mkdocstrings
@@ -20,11 +20,11 @@ colorama==0.4.6
     #   mkdocs-material
 ghp-import==2.1.0
     # via mkdocs
-griffe==1.5.1
+griffe==1.5.6
     # via mkdocstrings-python
 idna==3.10
     # via requests
-jinja2==3.1.4
+jinja2==3.1.5
     # via
     #   mkdocs
     #   mkdocs-material
@@ -55,23 +55,23 @@ mkdocs==1.6.1
     #   mkdocs-autorefs
     #   mkdocs-material
     #   mkdocstrings
-mkdocs-autorefs==1.2.0
+mkdocs-autorefs==1.3.0
     # via
     #   mkdocstrings
     #   mkdocstrings-python
 mkdocs-get-deps==0.2.0
     # via mkdocs
-mkdocs-material==9.5.44
+mkdocs-material==9.6.1
     # via -r ./requirements.in
 mkdocs-material-extensions==1.3.1
     # via
     #   -r ./requirements.in
     #   mkdocs-material
-mkdocstrings[python]==0.26.2
+mkdocstrings[python]==0.27.0
     # via
     #   -r ./requirements.in
     #   mkdocstrings-python
-mkdocstrings-python==1.12.2
+mkdocstrings-python==1.13.0
     # via mkdocstrings
 packaging==24.2
     # via mkdocs
@@ -83,9 +83,9 @@ platformdirs==4.3.6
     # via
     #   mkdocs-get-deps
     #   mkdocstrings
-pygments==2.18.0
+pygments==2.19.1
     # via mkdocs-material
-pymdown-extensions==10.12
+pymdown-extensions==10.14.3
     # via
     #   -r ./requirements.in
     #   mkdocs-material
@@ -104,9 +104,9 @@ regex==2024.11.6
     # via mkdocs-material
 requests==2.32.3
     # via mkdocs-material
-six==1.16.0
+six==1.17.0
     # via python-dateutil
-urllib3==2.2.3
+urllib3==2.3.0
     # via requests
 watchdog==6.0.0
     # via mkdocs

@@ -8,8 +8,6 @@
             name="viewport"
             content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no"
         />
-        <script type="module" src="https://cdn.jsdelivr.net/npm/@finos/perspective@{{perspective_version}}/dist/cdn/perspective.js"></script>
-        <script type="module" src="https://cdn.jsdelivr.net/npm/@finos/perspective-viewer@{{perspective_version}}/dist/cdn/perspective-viewer.js"></script>
         <script type="module" src="https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-datagrid@{{perspective_version}}/dist/cdn/perspective-viewer-datagrid.js"></script>
         <script type="module" src="https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-d3fc@{{perspective_version}}/dist/cdn/perspective-viewer-d3fc.js" ></script>
 
@@ -37,26 +35,27 @@
         <perspective-viewer id="viewer" class="perspective-table-class"> </perspective-viewer>
 
         <script type="module">
+            import "https://cdn.jsdelivr.net/npm/@finos/perspective-viewer@{{perspective_version}}/dist/cdn/perspective-viewer.js";
             import perspective from "https://cdn.jsdelivr.net/npm/@finos/perspective@{{perspective_version}}/dist/cdn/perspective.js";
-            window.addEventListener("DOMContentLoaded", async function () {
-                const viewer = document.getElementById("viewer");
 
-                const websocket_uri = "ws://" + window.location.host + "/websocket";
-                const websocket = await perspective.websocket(websocket_uri);
-                const table = await websocket.open_table("{{table_config.name}}");
+            const viewer = document.getElementById("viewer");
 
-                viewer.load(table);
+            const websocket_uri = "ws://" + window.location.host + "/websocket";
+            const websocket = await perspective.websocket(websocket_uri);
+            const table = await websocket.open_table("{{table_config.name}}");
 
-                let config = await viewer.save();
+            viewer.load(table);
 
-                config.name = "{{table_config.name}}";
-                config.title = "{{table_config.name}}";
-                config.columns = {% raw json_encode(table_config.columns) %};
-                config.sort = {% raw json_encode(table_config.sort) %};
-                config.filter = {% raw json_encode(table_config.filters) %};
+            let config = await viewer.save();
 
-                await viewer.restore(config);
-            });
+            config.name = "{{table_config.name}}";
+            config.title = "{{table_config.name}}";
+            config.columns = {% raw json_encode(table_config.columns) %};
+            config.sort = {% raw json_encode(table_config.sort) %};
+            config.filter = {% raw json_encode(table_config.filters) %};
+
+            await viewer.restore(config);
+
         </script>
     </body>
 </html>
