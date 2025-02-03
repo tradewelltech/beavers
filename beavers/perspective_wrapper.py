@@ -225,9 +225,9 @@ def run_web_application(
         if isinstance(node._function, _PerspectiveNode):
             nodes.append(node._function)
     assert len(nodes) > 0, "No perspective table nodes"
-    assert len({n.table_definition.name for n in nodes}) == len(
-        nodes
-    ), "Duplicate table name"
+    assert len({n.table_definition.name for n in nodes}) == len(nodes), (
+        "Duplicate table name"
+    )
 
     web_app = tornado.web.Application(
         [

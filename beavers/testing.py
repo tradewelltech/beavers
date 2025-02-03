@@ -36,9 +36,9 @@ class DagTestBench:
         cycle_id = sinks[0].get_cycle_id()
         assert cycle_id == self.dag.get_cycle_id()
         actual_messages = sinks[0].get_sink_value()
-        assert len(actual_messages) == len(
-            expected_messages
-        ), f"Sink {sink_name} value size mismatch"
+        assert len(actual_messages) == len(expected_messages), (
+            f"Sink {sink_name} value size mismatch"
+        )
         for actual_message, expected_message in zip(actual_messages, expected_messages):
             assert actual_message == expected_message
         return self
@@ -47,7 +47,7 @@ class DagTestBench:
         sinks = self.dag.get_sinks()[sink_name]
         assert len(sinks) == 1
         cycle_id = sinks[0].get_cycle_id()
-        assert (
-            cycle_id < self.dag.get_cycle_id()
-        ), f"Sink {sink_name} got updated this cycle"
+        assert cycle_id < self.dag.get_cycle_id(), (
+            f"Sink {sink_name} got updated this cycle"
+        )
         return self

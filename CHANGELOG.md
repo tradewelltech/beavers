@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 <!-- insertion marker -->
+## [v0.12.1](https://github.com/tradewelltech/beavers/releases/tag/v0.12.1) - 2025-02-03
+
+<small>[Compare with v0.12.0](https://github.com/tradewelltech/beavers/compare/v0.12.0...v0.12.1)</small>
+
 ## [v0.12.0](https://github.com/tradewelltech/beavers/releases/tag/v0.12.0) - 2024-11-25
 
 <small>[Compare with v0.11.0](https://github.com/tradewelltech/beavers/compare/v0.11.0...v0.12.0)</small>
