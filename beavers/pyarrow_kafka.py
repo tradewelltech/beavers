@@ -1,3 +1,5 @@
+"""PyArrow Kafka serializers and deserializers."""
+
 import dataclasses
 import io
 import json
@@ -15,6 +17,8 @@ from beavers.kafka import (
 
 @dataclasses.dataclass(frozen=True)
 class JsonDeserializer(KafkaMessageDeserializer[pa.Table]):
+    """Deserialize JSON messages from Kafka into a pyarrow Table."""
+
     schema: pa.Schema
 
     def __call__(self, messages: confluent_kafka.Message) -> pa.Table:
@@ -36,6 +40,8 @@ class JsonDeserializer(KafkaMessageDeserializer[pa.Table]):
 
 @dataclasses.dataclass(frozen=True)
 class JsonSerializer(KafkaMessageSerializer[pa.Table]):
+    """Serialize pyarrow Tables into JSON messages for Kafka."""
+
     topic: str
 
     def __call__(self, table: pa.Table):

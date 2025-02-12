@@ -21,7 +21,7 @@ class ReplayContext:
     """
     Stores the information about a replay.
 
-    Attributes
+    Attributes:
     ----------
     start: pd.Timestamp
         Start of the replay
@@ -58,7 +58,7 @@ class DataSource(Protocol[T]):
         timestamp
             End of the time interval for which data is required (inclusive)
 
-        Returns
+        Returns:
         -------
         data
             The data for the interval (or empty if no data is found)
@@ -72,7 +72,7 @@ class DataSource(Protocol[T]):
         If no data is available this should return `UTC_MAX`
 
 
-        Returns
+        Returns:
         -------
         timestamp: pd.Timestamp
             Timestamp of the next available data point (or `UTC_MAX` if no more data
@@ -113,7 +113,7 @@ class DataSourceProvider(Protocol[T]):
         replay_context:
             Information about the replay that's about to run
 
-        Returns
+        Returns:
         -------
         DataSource[T]:
             Source for the replay
@@ -134,7 +134,7 @@ class DataSinkProvider(Protocol[T]):
         replay_context:
             Information about the replay that's about to run
 
-        Returns
+        Returns:
         -------
         DataSink[T]:
             Sink for the replay
@@ -187,7 +187,7 @@ class ReplayDriver:
     - collect the output data and pass it to the sink
     - close the sink at the end of the run
 
-    Notes
+    Notes:
     -----
     Do not call the constructor directly, use `create` instead
 
