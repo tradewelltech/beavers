@@ -8,7 +8,9 @@
 [![License][license-image]][license-url]
 [![Downloads][downloads-image]][downloads-url]
 [![Downloads][downloads-month-image]][downloads-month-url]
-[![Code style: black][codestyle-image]][codestyle-url]
+[![pydocstyle][pydocstyle-image]][pydocstyle-url]
+[![Checked with mypy][mypy-image]][mypy-url]
+[![Ruff][ruff-image]][ruff-url]
 
 ![Beavers Logo][5]
 
@@ -80,3 +82,9 @@ for both realtime and batch jobs.
 [codestyle-url]: https://github.com/ambv/black
 [snyk-image]: https://snyk.io/advisor/python/beavers/badge.svg
 [snyk-url]: https://snyk.io/advisor/python/beavers
+[pydocstyle-image]: https://img.shields.io/badge/pydocstyle-enabled-AD4CD3
+[pydocstyle-url]: http://www.pydocstyle.org/en/stable/
+[mypy-image]: http://www.mypy-lang.org/static/mypy_badge.svg
+[mypy-url]: http://mypy-lang.org/
+[ruff-image]: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json
+[ruff-url]: https://github.com/astral-sh/ruff

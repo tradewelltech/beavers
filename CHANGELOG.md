@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [v0.11.0](https://github.com/tradewelltech/beavers/releases/tag/v0.11.0) - 2024-11-15
 
 <small>[Compare with v0.10.0](https://github.com/tradewelltech/beavers/compare/v0.10.0...v0.11.0)</small>
-
+m
 ### Added
 
 - Add python 3.13 ([1984bb2](https://github.com/tradewelltech/beavers/commit/1984bb2c7b14126084d5497243418f8bc0123494) by aandres3).

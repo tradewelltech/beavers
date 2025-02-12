@@ -1,6 +1,7 @@
 """Module for building and representing dags and nodes."""
 
 from __future__ import annotations
+import pandas as pd
 
 import collections.abc
 import dataclasses
@@ -22,17 +23,16 @@ if TYPE_CHECKING:
     try:
         from beavers.pyarrow_wrapper import ArrowDagWrapper
     except ImportError:
-        ArrowDagWrapper = None
+        ArrowDagWrapper = None  # type: ignore[assignment, misc]
     try:
         from beavers.pandas_wrapper import PandasWrapper
     except ImportError:
-        PandasWrapper = None
+        PandasWrapper = None  # type: ignore[assignment, misc]
     try:
         from beavers.perspective_wrapper import PerspectiveDagWrapper
     except ImportError:
-        PerspectiveDagWrapper = None
+        PerspectiveDagWrapper = None  # type: ignore[assignment, misc]
 
-import pandas as pd
 
 P = ParamSpec("P")
 
@@ -49,7 +49,7 @@ UTC_MAX = pd.Timestamp.max.tz_localize("UTC")
 
 
 class _SourceStreamFunction(Generic[T]):
-    def __init__(self, empty_factory: Callable[[], T], name: str):
+    def __init__(self, empty_factory: Callable[[], T], name: str | None):
         self._empty_factory = empty_factory
         self._name = name
         self._value = empty_factory()
@@ -78,15 +78,15 @@ class _SinkFunction(Generic[T]):
 
 class _ValueCutOff(Generic[T]):
     def __init__(self, comparator: Callable[[T, T], bool] = operator.eq):
-        self._value = _STATE_EMPTY
+        self._value: T = _STATE_EMPTY  # type: ignore[assignment]
         self._comparator = comparator
 
     def __call__(self, value: T) -> T:
-        if self._value == _STATE_EMPTY or not self._comparator(value, self._value):
+        if self._value is _STATE_EMPTY or not self._comparator(value, self._value):
             self._value = value
             return value
         else:
-            return _STATE_UNCHANGED
+            return _STATE_UNCHANGED  # type: ignore[return-value]
 
 
 class TimerManager:
@@ -102,7 +102,7 @@ class TimerManager:
     It is accessed by the framework to decide when the next timer.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize with default values."""
         self._next_timer: pd.Timestamp = UTC_MAX
         self._just_triggered: bool = False
@@ -144,7 +144,7 @@ class _TimerManagerFunction:
     Used by the framework to trigger timers.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.timer_manager: TimerManager = TimerManager()
 
     def __call__(self) -> TimerManager:
@@ -201,7 +201,7 @@ class _NodeInputs:
             nodes=tuple(all_nodes),
         )
 
-    def input_nodes(self) -> tuple[Node]:
+    def input_nodes(self) -> tuple[Node, ...]:
         return self.nodes
 
 
@@ -233,16 +233,22 @@ class Node(Generic[T]):
     You shouldn't use them directly to read values (use sink for this)
     """
 
-    _function: Optional[Callable[[...], T]]
+    _function: Callable[..., T]
     _inputs: _NodeInputs = dataclasses.field(repr=False)
     _empty_factory: Any
     _observers: list[Node] = dataclasses.field(repr=False)
     _runtime_data: _RuntimeNodeData
 
+    def __post_init__(self):
+        """Check not is valid."""
+        assert self._function is not None
+        assert callable(self._function)
+
     @staticmethod
     def _create(
-        value: T = None,
-        function: Optional[Callable[[...], T]] = None,
+        value: T | None = None,
+        *,
+        function: Callable[..., T],
         inputs: _NodeInputs = _NO_INPUTS,
         empty_factory: Any = _STATE_EMPTY,
         notifications: int = 1,
@@ -260,7 +266,7 @@ class Node(Generic[T]):
         if self._runtime_data.value is _VALUE_EMPTY:
             return self._empty_factory()
         else:
-            return self._runtime_data.value
+            return self._runtime_data.value  # type: ignore[return-value]
 
     def get_cycle_id(self) -> int:
         """Return id of the cycle at which this node last updated."""
@@ -270,14 +276,16 @@ class Node(Generic[T]):
         """Set the value of a `_SourceStream`."""
         if not isinstance(self._function, _SourceStreamFunction):
             raise TypeError(f"Only {_SourceStreamFunction.__name__} can be set")
-        self._function.set(value)
-        self._stain()
+        else:
+            self._function.set(value)
+            self._stain()
 
     def get_sink_value(self) -> Any:
         """Return the value of a `_SinkFunction`."""
-        if not isinstance(self._function, _SinkFunction):
+        if isinstance(self._function, _SinkFunction):
+            return self._function.get()  # type: ignore[attr-defined]
+        else:
             raise TypeError(f"Only {_SinkFunction.__name__} can be read")
-        return self._function.get()
 
     def _stain(self):
         self._runtime_data.notifications += 1
@@ -374,13 +382,13 @@ class DagMetrics:
 class Dag:
     """Main class used for building and executing a dag."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Create an empty `Dag`."""
         self._nodes: list[Node] = []
         self._sources: dict[str, Node] = {}
         self._sinks: dict[str, Node] = {}
         self._now_node: Node[pd.Timestamp] = self._add_node(
-            Node._create(UTC_EPOCH, _SourceState(UTC_EPOCH))
+            Node._create(value=UTC_EPOCH, function=_SourceState(UTC_EPOCH))
         )
         self._silent_now_node: Node[pd.Timestamp] = self.silence(self._now_node)
         self._timer_manager_nodes: list[Node[TimerManager]] = []
@@ -575,7 +583,7 @@ class Dag:
         _check_input(node)
         return self._add_node(
             Node._create(
-                function=SilentUpdate,
+                function=SilentUpdate,  # type: ignore[arg-type]
                 inputs=_NodeInputs.create([node], {}),
                 value=node.get_value(),
                 empty_factory=node._empty_factory,
@@ -641,7 +649,7 @@ class Dag:
         """Run the dag for a given timestamp."""
         self._cycle_id += 1
         if timestamp is not None:
-            self._now_node._function.set_value(timestamp)
+            self._now_node._function.set_value(timestamp)  # type: ignore[attr-defined]
             self._now_node._stain()
             self._flush_timers(timestamp)
 
@@ -684,7 +692,7 @@ class Dag:
 
     def _add_stream(
         self,
-        function: Callable[[...], T],
+        function: Callable[..., T],
         empty_factory: Callable[[], T],
         inputs: _NodeInputs,
     ) -> Node[T]:
@@ -698,17 +706,20 @@ class Dag:
             )
         )
 
-    def _flush_timers(self, now: pd.Timestamp) -> int:
+    def _flush_timers(
+        self,
+        now: pd.Timestamp,  # type: ignore[name-defined]
+    ) -> int:
         count = 0
         for node in self._timer_manager_nodes:
-            timer_manager: TimerManager = node.get_value()
+            timer_manager: TimerManager = node.get_value()  # type: ignore[name-defined]
             if timer_manager._flush(now):
                 node._stain()
                 count += 1
 
         return count
 
-    def _add_state(self, function: Callable[[...], T], inputs: _NodeInputs) -> Node[T]:
+    def _add_state(self, function: Callable[..., T], inputs: _NodeInputs) -> Node[T]:
         _check_function(function)
         return self._add_node(Node._create(function=function, inputs=inputs))
 
@@ -731,14 +742,14 @@ def _check_empty(
     if empty is not None and empty_factory is not None:
         raise ValueError(f"Can't provide both {empty=} and {empty_factory=}")
     elif empty is None and empty_factory is None:
-        return list
+        return list  # type: ignore[return-value]
     elif empty is not None:
         if not isinstance(empty, collections.abc.Sized):
             raise TypeError("`empty` should implement `__len__`")
         elif len(empty) != 0:
             raise TypeError("`len(empty)` should be 0")
         else:
-            return lambda: empty
+            return lambda: empty  # type: ignore[return-value]
     else:
         assert empty is None
         if not callable(empty_factory):
@@ -762,7 +773,7 @@ def _check_input(node: Node) -> Node:
         return node
 
 
-def _check_function(function: Callable[ParamSpec, T]) -> Callable[ParamSpec, T]:
+def _check_function(function: Callable[P, T]) -> Callable[P, T]:
     if not callable(function):
         raise TypeError("`function` should be a callable")
     else:
