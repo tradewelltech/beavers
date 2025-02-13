@@ -12,6 +12,9 @@
 [![pydocstyle][pydocstyle-image]][pydocstyle-url]
 [![Checked with mypy][mypy-image]][mypy-url]
 [![Ruff][ruff-image]][ruff-url]
+[![pre-commit enable][precommit-image]][precommit-url]
+[![semantic-release][semver-image]][semver-url]
+
 
 ![Beavers Logo][5]
 
@@ -87,3 +90,7 @@ for both realtime and batch jobs.
 [mypy-url]: http://mypy-lang.org/
 [ruff-image]: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json
 [ruff-url]: https://github.com/astral-sh/ruff
+[precommit-image]: https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white
+[precommit-url]: https://pre-commit.com/
+[semver-image]: https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg
+[semver-url]: https://semver.org/
