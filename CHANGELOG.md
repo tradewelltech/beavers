@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 <!-- insertion marker -->
+## [v0.13.0](https://github.com/tradewelltech/beavers/releases/tag/v0.13.0) - 2025-02-13
+
+<small>[Compare with v0.12.1](https://github.com/tradewelltech/beavers/compare/v0.12.1...v0.13.0)</small>
+
+### Added
+
+- Add missing badge (#72) ([5bf44e9](https://github.com/tradewelltech/beavers/commit/5bf44e982740651ccf1a168ce88b4376519181ee) by 0x26res).
+- Add polars support ([f30da87](https://github.com/tradewelltech/beavers/commit/f30da8779c2a683f2ec2d9607134658ac70d4afb) by aandres3).
+
 ## [v0.12.1](https://github.com/tradewelltech/beavers/releases/tag/v0.12.1) - 2025-02-03
 
 <small>[Compare with v0.12.0](https://github.com/tradewelltech/beavers/compare/v0.12.0...v0.12.1)</small>

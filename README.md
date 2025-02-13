@@ -8,6 +8,7 @@
 [![License][license-image]][license-url]
 [![Downloads][downloads-image]][downloads-url]
 [![Downloads][downloads-month-image]][downloads-month-url]
+[![snyk][snyk-image]][snyk-url]
 [![pydocstyle][pydocstyle-image]][pydocstyle-url]
 [![Checked with mypy][mypy-image]][mypy-url]
 [![Ruff][ruff-image]][ruff-url]
@@ -78,8 +79,6 @@ for both realtime and batch jobs.
 [downloads-url]: https://static.pepy.tech/badge/beavers
 [downloads-month-image]: https://pepy.tech/badge/beavers/month
 [downloads-month-url]: https://static.pepy.tech/badge/beavers/month
-[codestyle-image]: https://img.shields.io/badge/code%20style-black-000000.svg
-[codestyle-url]: https://github.com/ambv/black
 [snyk-image]: https://snyk.io/advisor/python/beavers/badge.svg
 [snyk-url]: https://snyk.io/advisor/python/beavers
 [pydocstyle-image]: https://img.shields.io/badge/pydocstyle-enabled-AD4CD3
