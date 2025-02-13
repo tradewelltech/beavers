@@ -54,6 +54,7 @@ nav:
     - concepts/kafka.md
     - concepts/pandas.md
     - concepts/pyarrow.md
+    - concepts/polars.md
     - concepts/perspective.md
   - API Reference:
     - reference/dag.md

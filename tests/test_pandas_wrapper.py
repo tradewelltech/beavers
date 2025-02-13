@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 
 from beavers import Dag
-from beavers.pandas_wrapper import _empty_df, _get_stream_dtypes, _LatestTracker
+from beavers.pandas_wrapper import _empty_df, _get_stream_dtypes, _LastTracker
 
 DTYPES = pd.Series(
     {
@@ -60,7 +60,7 @@ def test_get_stream_dtypes():
 
 
 def test_latest_tracker():
-    tracker = _LatestTracker(["col1"], _empty_df(DTYPES))
+    tracker = _LastTracker(["col1"], _empty_df(DTYPES))
     pd.testing.assert_frame_equal(tracker(_empty_df(DTYPES)), _empty_df(DTYPES))
     pd.testing.assert_frame_equal(tracker(DF), DF)
     pd.testing.assert_frame_equal(tracker(DF), DF)
@@ -70,10 +70,10 @@ def test_latest_tracker():
     )
 
 
-def test_latest_by_keys():
+def test_last_by_keys():
     dag = Dag()
     source = dag.pd.source_df(dtypes=DTYPES)
-    latest = dag.pd.latest_by_keys(source, ["col1"])
+    latest = dag.pd.last_by_keys(source, ["col1"])
 
     dag.execute()
     pd.testing.assert_frame_equal(latest.get_value(), _empty_df(DTYPES))

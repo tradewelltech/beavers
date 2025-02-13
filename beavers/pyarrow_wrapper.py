@@ -19,7 +19,7 @@ class _TableFiler:
         return table.filter(self.predicate(table, *args, **kwargs))
 
 
-def _get_latest(table: pa.Table, keys: list[str]) -> pa.Table:
+def _get_last_by(table: pa.Table, keys: Sequence[str]) -> pa.Table:
     return table.take(
         table.select(keys)
         .append_column("_beavers_index", pa.array(np.arange(len(table))))
@@ -79,12 +79,12 @@ def _get_stream_schema(node: Node[pa.Table]) -> pa.Schema:
 
 
 @dataclasses.dataclass()
-class _LatestTracker:
-    key_columns: list[str]
+class _LastByKey:
+    key_columns: tuple[str, ...]
     current: pa.Table
 
-    def __call__(self, stream: pa.Table):
-        self.current = _get_latest(
+    def __call__(self, stream: pa.Table) -> pa.Table:
+        self.current = _get_last_by(
             pa.concat_tables([self.current, stream]), self.key_columns
         )
         return self.current
@@ -123,11 +123,13 @@ class ArrowDagWrapper:
             stream, *args, **kwargs
         )
 
-    def latest_by_keys(self, stream: Node[pa.Table], keys: list[str]) -> Node[pa.Table]:
+    def last_by_keys(
+        self, stream: Node[pa.Table], keys: Sequence[str]
+    ) -> Node[pa.Table]:
         """Build a state of the latest row by keys."""
         schema = _get_stream_schema(stream)
         keys = _check_columns(keys, schema)
-        return self._dag.state(_LatestTracker(keys, schema.empty_table())).map(stream)
+        return self._dag.state(_LastByKey(keys, schema.empty_table())).map(stream)
 
     def get_column(self, stream: Node[pa.Table], key: str) -> Node[pa.ChunkedArray]:
         """Return a column from a stream node of type pa.Table."""

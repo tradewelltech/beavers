@@ -68,8 +68,8 @@ etf_composition_source = dag.pd.source_df(
 # --8<-- [end:dag_source]
 
 # --8<-- [start:dag_state]
-price_state = dag.pd.latest_by_keys(price_source, ["ticker"])
-etf_composition_state = dag.pd.latest_by_keys(
+price_state = dag.pd.last_by_keys(price_source, ["ticker"])
+etf_composition_state = dag.pd.last_by_keys(
     etf_composition_source,
     ["etf", "ticker"],
 )
