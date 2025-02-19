@@ -4,6 +4,8 @@ Welcome! We're happy to have you here. Thank you in advance for your contributio
 
 ## Development environment set up
 
+The repo uses poetry to manage dependencies.
+
 ```shell
 python3 -m venv --clear venv
 source venv/bin/activate
@@ -27,12 +29,38 @@ coverage run --branch --rcfile=./pyproject.toml --include "./beavers/*" -m pytes
 coverage report --show-missing
 ```
 
+To run on every python version with Tox:
+
+```shell
+tox run
+```
+
+## Linting
+
+The repo uses [pre-commit](https://pre-commit.com/) to lint automatically.
+To install pre-commit hooks, which will lint automatically on commits:
+```shell
+pre-commit install # Run once to run automatically when committing
+```
+
+To run the linter:
+
+```shell
+pre-commit run --all-files
+```
+
+Mypy doesn't work in pre-commit, so you need to run it manually:
+
+```shell
+mypy --config-file=./pyproject.toml ./beavers/dag.py
+```
+
+
 ## Generating the change log
 
 We use [git-change-log](https://pawamoy.github.io/git-changelog/usage/) to generate our CHANGELOG.md
 
-Please follow the [basic convention](https://pawamoy.github.io/git-changelog/usage/#basic-convention) for commit
-message.
+Please follow the [basic convention](https://pawamoy.github.io/git-changelog/usage/#basic-convention) for commit message.
 
 To update the change log, run:
 
@@ -55,7 +83,7 @@ git tag vX.X.X
 git push origin vX.X.X
 ```
 
-Lastly on github, go to tags and create a release.
+Lastly on [Github](https://github.com/tradewelltech/beavers), go to tags and create a release.
 The CI will deploy to pypi automatically from then.
 
 ## Testing the documentation
