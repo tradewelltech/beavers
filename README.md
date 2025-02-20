@@ -10,6 +10,9 @@
 [![Downloads][downloads-month-image]][downloads-month-url]
 [![Code style: black][codestyle-image]][codestyle-url]
 [![snyk][snyk-image]][snyk-url]
+<a href="https://trackgit.com">
+<img src="https://us-central1-trackgit-analytics.cloudfunctions.net/token/ping/m7c1fpbnueo78pkcetcm" alt="trackgit-views" />
+</a>
 
 ![Beavers Logo][5]
 
