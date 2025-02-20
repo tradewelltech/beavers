@@ -2,6 +2,53 @@
 build-backend = "poetry_dynamic_versioning.backend"
 requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]
 
+[project]
+authors = [
+  {name = "Tradewell Tech", email = "engineering@tradewelltech.co"}
+]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "License :: OSI Approved :: Apache Software License",
+  "Natural Language :: English",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13"
+]
+dependencies = [
+  "confluent_kafka>=2.1.1",
+  "pandas>1.4.0",
+  "perspective-python>=3.0.0",
+  "polars",
+  "pyarrow>=12.0",
+  "tornado"
+]
+description = "Python stream processing"
+documentation = "https://beavers.readthedocs.io/en/latest/"
+keywords = ["apache-arrow", "streaming", "data"]
+license = "Apache-2.0"
+maintainers = [
+  {name = "0x26res", email = "0x26res@gmail.com"}
+]
+name = "beavers"
+packages = [
+  {include = "beavers"}
+]
+readme = "README.md"
+repository = "https://github.com/tradewelltech/beavers"
+requires-python = ">=3.10,<4"
+version = "0.0.0"
+
+[project.optional-dependencies]
+confluent_kafka = ["confluent_kafka"]
+perspective-python = ["perspective-python", "tornado"]
+polars = ["polars"]
+pyarrow = ["pyarrow"]
+
+[project.urls]
+"Bug Tracker" = "https://github.com/tradewelltech/beavers/issues"
+"Changelog" = "https://github.com/tradewelltech/beavers/blob/main/CHANGELOG.md"
+
 [tool.bandit]
 skips = ["B101", "B311"]
 
@@ -18,45 +65,6 @@ omit = [
   # This is hard to test, and the API is about to change a lot
   "*/beavers/perspective_wrapper.py"
 ]
-
-[tool.poetry]
-authors = ["Tradewell Tech <engineering@tradewelltech.co>"]
-classifiers = [
-  "Development Status :: 5 - Production/Stable",
-  "License :: OSI Approved :: Apache Software License",
-  "Natural Language :: English",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13"
-]
-description = "Python stream processing"
-documentation = "https://beavers.readthedocs.io/en/latest/"
-keywords = ["apache-arrow", "streaming", "data"]
-license = "Apache-2.0"
-maintainers = ["0x26res <0x26res@gmail.com>"]
-name = "beavers"
-packages = [
-  {include = "beavers"}
-]
-readme = "README.md"
-repository = "https://github.com/tradewelltech/beavers"
-version = "0.0.0"
-
-[tool.poetry.dependencies]
-confluent_kafka = ">=2.1.1"
-pandas = ">1.4.0"
-perspective-python = ">=3.0.0"
-polars = "*"
-pyarrow = ">=12.0"
-python = ">=3.10,<4"
-tornado = "*"
-
-[tool.poetry.extras]
-confluent_kafka = ["confluent_kafka"]
-perspective-python = ["perspective-python", "tornado"]
-polars = ["polars"]
-pyarrow = ["pyarrow"]
 
 [tool.poetry.group.dev.dependencies]
 black = ">=22.10.0"
@@ -87,10 +95,6 @@ mkdocs-material-extensions = "*"
 mkdocstrings = {version = ">=0.21.2", extras = ["python"]}
 pymdown-extensions = "*"
 tornado = "*"
-
-[tool.poetry.urls]
-"Bug Tracker" = "https://github.com/tradewelltech/beavers/issues"
-"Changelog" = "https://github.com/tradewelltech/beavers/blob/main/CHANGELOG.md"
 
 [tool.poetry-dynamic-versioning]
 enable = true

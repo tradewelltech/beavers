@@ -14,6 +14,9 @@
 [![Ruff][ruff-image]][ruff-url]
 [![pre-commit enable][precommit-image]][precommit-url]
 [![semantic-release][semver-image]][semver-url]
+<a href="https://trackgit.com">
+<img src="https://us-central1-trackgit-analytics.cloudfunctions.net/token/ping/m7c1fpbnueo78pkcetcm" alt="trackgit-views" />
+</a>
 
 
 ![Beavers Logo][5]
