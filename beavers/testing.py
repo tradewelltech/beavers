@@ -1,3 +1,5 @@
+"""Helper functions and tool to test a beavers DAG."""
+
 from typing import Any, Optional, Sequence, TypeVar
 
 import pandas as pd
@@ -8,6 +10,8 @@ T = TypeVar("T")
 
 
 class DagTestBench:
+    """A test bench to test a beavers DAG."""
+
     def __init__(self, dag: Dag):
         self.dag = dag
         for output_name, output_sinks in self.dag.get_sinks().items():

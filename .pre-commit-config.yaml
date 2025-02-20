@@ -1,14 +1,6 @@
 default_language_version:
   python: python3.10
 repos:
-  - repo: https://github.com/pycqa/pydocstyle
-    rev: 6.3.0
-    hooks:
-      - id: pydocstyle
-        files: ^beavers/(dag|replay|kafka|arrow).py
-        additional_dependencies:
-          - tomli
-
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:

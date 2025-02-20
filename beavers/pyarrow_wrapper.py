@@ -105,7 +105,7 @@ class ArrowDagWrapper:
     def table_stream(
         self, function: Callable[P, pa.Table], schema: pa.Schema
     ) -> NodePrototype[pa.Table]:
-        """Add a stream node of output type `pa.Table`"""
+        """Add a stream node of output type `pa.Table`."""
         return self._dag.stream(function, empty=schema.empty_table())
 
     def filter_stream(

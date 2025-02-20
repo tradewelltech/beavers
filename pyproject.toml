@@ -110,5 +110,17 @@ asyncio_mode = "auto"
 [tool.ruff]
 line-length = 88
 
+[tool.ruff.lint]
+ignore = ["D102", "D107", "D203", "D212"]
+select = ["D", "E", "F"]
+
 [tool.ruff.lint.isort]
 known-first-party = ["beavers", "tradewell_proto"]
+
+[tool.ruff.lint.per-file-ignores]
+"examples/*" = ["D"]
+"scripts/*" = ["D"]
+"tests/*" = ["D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
