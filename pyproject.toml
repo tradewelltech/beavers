@@ -40,7 +40,7 @@ requires-python = ">=3.10,<4"
 version = "0.0.0"
 
 [project.optional-dependencies]
-confluent_kafka = ["confluent_kafka"]
+confluent-kafka = ["confluent-kafka"]
 perspective-python = ["perspective-python", "tornado"]
 polars = ["polars"]
 pyarrow = ["pyarrow"]
