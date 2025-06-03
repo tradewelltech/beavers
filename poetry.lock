@@ -2118,7 +2118,7 @@ test = ["big-O", "importlib-resources ; python_version < \"3.9\"", "jaraco.funct
 type = ["pytest-mypy"]
 
 [extras]
-confluent-kafka = ["confluent_kafka"]
+confluent-kafka = ["confluent-kafka"]
 perspective-python = ["perspective-python", "tornado"]
 polars = ["polars"]
 pyarrow = ["pyarrow"]
@@ -2126,4 +2126,4 @@ pyarrow = ["pyarrow"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4"
-content-hash = "d900bffe60d840b5c967d978f0d5bf3cd7c2c75aaebeeba41c15f817ff74a7cd"
+content-hash = "34760e5aa5759063332c58db330de76c128f1253ad0bff0609c115dd99e7de7a"
