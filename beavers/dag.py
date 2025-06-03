@@ -525,7 +525,7 @@ class Dag:
         _check_function(function)
 
         def add_to_dag(
-            inputs: _NodeInputs, frame_summaries: tuple[traceback.FrameSummary]
+            inputs: _NodeInputs, frame_summaries: list[traceback.FrameSummary]
         ) -> Node:
             return self._add_state(function, inputs, frame_summaries)
 

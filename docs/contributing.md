@@ -48,7 +48,7 @@ To run the linter:
 ```shell
 pre-commit run --all-files
 ```
-
+We started using mypy, on a limited number of files only for the moment.
 Mypy doesn't work in pre-commit, so you need to run it manually:
 
 ```shell
