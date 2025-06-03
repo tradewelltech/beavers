@@ -247,7 +247,7 @@ class _ConsumerManager:
     def __init__(
         self,
         cutoff: pd.Timestamp,
-        partitions: dict[confluent_kafka.TopicPartition : tuple[int, int]],
+        partitions: dict[confluent_kafka.TopicPartition, tuple[int, int]],
         consumer: confluent_kafka.Consumer,
         batch_size: int,
         max_held_messages: int,

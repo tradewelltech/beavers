@@ -74,12 +74,15 @@ flake8 = ">=5.0.4"
 git-changelog = ">=2.2.0"
 isort = ">=5.10.1"
 mock = "*"
+mypy = "*"
+pandas-stubs = "*"
 pip-tools = ">=6.12.1"
 pre-commit = ">=2.20.0"
 pylint = ">=2.15.0"
 pytest = ">=7.2.0"
 pytest-asyncio = "*"
 tabulate = "*"
+types-confluent-kafka = "*"
 
 [tool.poetry.group.docs]
 optional = true

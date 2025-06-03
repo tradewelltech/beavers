@@ -8,11 +8,16 @@
 [![License][license-image]][license-url]
 [![Downloads][downloads-image]][downloads-url]
 [![Downloads][downloads-month-image]][downloads-month-url]
-[![Code style: black][codestyle-image]][codestyle-url]
 [![snyk][snyk-image]][snyk-url]
+[![pydocstyle][pydocstyle-image]][pydocstyle-url]
+[![Checked with mypy][mypy-image]][mypy-url]
+[![Ruff][ruff-image]][ruff-url]
+[![pre-commit enable][precommit-image]][precommit-url]
+[![semantic-release][semver-image]][semver-url]
 <a href="https://trackgit.com">
 <img src="https://us-central1-trackgit-analytics.cloudfunctions.net/token/ping/m7c1fpbnueo78pkcetcm" alt="trackgit-views" />
 </a>
+
 
 ![Beavers Logo][5]
 
@@ -80,7 +85,15 @@ for both realtime and batch jobs.
 [downloads-url]: https://static.pepy.tech/badge/beavers
 [downloads-month-image]: https://pepy.tech/badge/beavers/month
 [downloads-month-url]: https://static.pepy.tech/badge/beavers/month
-[codestyle-image]: https://img.shields.io/badge/code%20style-black-000000.svg
-[codestyle-url]: https://github.com/ambv/black
 [snyk-image]: https://snyk.io/advisor/python/beavers/badge.svg
 [snyk-url]: https://snyk.io/advisor/python/beavers
+[pydocstyle-image]: https://img.shields.io/badge/pydocstyle-enabled-AD4CD3
+[pydocstyle-url]: http://www.pydocstyle.org/en/stable/
+[mypy-image]: http://www.mypy-lang.org/static/mypy_badge.svg
+[mypy-url]: http://mypy-lang.org/
+[ruff-image]: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json
+[ruff-url]: https://github.com/astral-sh/ruff
+[precommit-image]: https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white
+[precommit-url]: https://pre-commit.com/
+[semver-image]: https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg
+[semver-url]: https://semver.org/
