@@ -1,6 +1,7 @@
 import asyncio
 import operator
 import time
+import traceback
 
 import pandas as pd
 import pytest
@@ -15,6 +16,7 @@ from beavers.dag import (
     _check_empty,
     _NodeInputs,
     _unchanged_callback,
+    _format_frame_summaries,
 )
 from tests.test_util import (
     GetLatest,
@@ -25,6 +27,7 @@ from tests.test_util import (
     add_no_42,
     join_counts,
 )
+import sys
 
 
 def test_state_positional():
@@ -71,8 +74,12 @@ def test_map_positional_and_key_word_not_valid():
 
     dag.state(add).map(x, left=y)
 
-    with pytest.raises(TypeError, match=r"got multiple values for argument"):
+    with pytest.raises(RuntimeError, match=r"Unable to run node") as execinfo:
         dag.execute()
+    assert isinstance(execinfo.value.__cause__, TypeError)
+    assert execinfo.value.__cause__.args == (
+        "add() got multiple values for argument 'left'",
+    )
 
 
 def test_map_runtime_failure():
@@ -88,8 +95,10 @@ def test_map_runtime_failure():
     assert 41 == z.get_value()
 
     y_source.set_stream([2])
-    with pytest.raises(ValueError, match=r".* == 42$"):
+    with pytest.raises(RuntimeError, match=r"Unable to run node") as execinfo:
         dag.execute()
+    assert isinstance(execinfo.value.__cause__, ValueError)
+    assert execinfo.value.__cause__.args == ("40 + 2 == 42",)
 
 
 def test_using_lambda():
@@ -734,3 +743,34 @@ def test_prune_sinks():
     dag.execute()
     assert node_a.get_value() == []  # Not updated
     assert node_b.get_value() == ["a", "b"]
+
+
+def get_hello():
+    return sys._getframe(0)
+
+
+def test_format_frame_summaries():
+    assert (
+        _format_frame_summaries(
+            (
+                traceback.FrameSummary(
+                    filename="hello.py",
+                    lineno=1,
+                    name="hello",
+                ),
+            )
+        )
+        == '  File "hello.py", line 1, in hello\n'
+    )
+
+
+def test_node_fails_no_frame():
+    dag = Dag()
+    dag._add_stream(
+        add_no_42,
+        list,
+        _NodeInputs.create(positional=(dag.const(42), dag.const(0)), key_word={}),
+        (),
+    )
+    with pytest.raises(ValueError, match=r"42 \+ 0 == 42"):
+        dag.execute()

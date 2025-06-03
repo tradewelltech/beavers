@@ -7,6 +7,7 @@ import dataclasses
 import operator
 from collections import defaultdict
 from functools import cached_property
+import traceback
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -50,6 +51,10 @@ _STATE_UNCHANGED = object()
 
 UTC_EPOCH = pd.to_datetime(0, utc=True)
 UTC_MAX = pd.Timestamp.max.tz_localize("UTC")
+
+
+def _format_frame_summaries(frame_summaries: Sequence[traceback.FrameSummary]) -> str:
+    return "".join(traceback.format_list(frame_summaries))
 
 
 class _SourceStreamFunction(Generic[T]):
@@ -160,7 +165,7 @@ class SilentUpdate(Generic[T]):
     """
     Wrap a value to make the update silent.
 
-    A silent updates means the value changed but downstream nodes don't get notified.
+    Silent updates mean the value changed, but downstream nodes don't get notified.
     """
 
     value: T
@@ -237,19 +242,21 @@ class Node(Generic[T]):
     You shouldn't use them directly to read values (use sink for this)
     """
 
-    _function: Optional[Callable[[...], T]]
+    _function: Optional[Callable[..., T]]
     _inputs: _NodeInputs = dataclasses.field(repr=False)
     _empty_factory: Any
     _observers: list[Node] = dataclasses.field(repr=False)
     _runtime_data: _RuntimeNodeData
+    _frame_summaries: tuple[traceback.FrameSummary, ...] = ()
 
     @staticmethod
     def _create(
         value: T = None,
-        function: Optional[Callable[[...], T]] = None,
+        function: Optional[Callable[..., T]] = None,
         inputs: _NodeInputs = _NO_INPUTS,
         empty_factory: Any = _STATE_EMPTY,
         notifications: int = 1,
+        frame_summaries: Sequence[traceback.FrameSummary] = (),
     ) -> Node:
         return Node(
             _function=function,
@@ -257,6 +264,7 @@ class Node(Generic[T]):
             _empty_factory=empty_factory,
             _runtime_data=_RuntimeNodeData(value, notifications, 0),
             _observers=[],
+            _frame_summaries=tuple(frame_summaries),
         )
 
     def get_value(self) -> T:
@@ -313,7 +321,15 @@ class Node(Generic[T]):
         key_word_values = {
             key: node.get_value() for key, node in self._inputs.key_word.items()
         }
-        updated_value = self._function(*positional_values, **key_word_values)
+        try:
+            updated_value = self._function(*positional_values, **key_word_values)
+        except Exception as e:
+            if self._frame_summaries:
+                raise RuntimeError(
+                    f"Unable to run node:\n{_format_frame_summaries(self._frame_summaries)}"
+                ) from e
+            else:
+                raise
         updated = self._process_updated_value(updated_value)
 
         if updated:
@@ -354,11 +370,14 @@ class Node(Generic[T]):
 class NodePrototype(Generic[T]):
     """A `Node` that is yet to be added to the `Dag`."""
 
-    _add_to_dag: Callable[[_NodeInputs], Node[T]]
+    _add_to_dag: Callable[[_NodeInputs, list[traceback.FrameSummary]], Node[T]]
 
     def map(self, *args: Node, **kwargs: Node) -> Node[T]:
         """Add the prototype to the dag and connect it to the given inputs."""
-        return self._add_to_dag(_NodeInputs.create(positional=args, key_word=kwargs))
+        return self._add_to_dag(
+            _NodeInputs.create(positional=args, key_word=kwargs),
+            traceback.extract_stack()[:-1],
+        )
 
 
 def _unchanged_callback():
@@ -443,6 +462,7 @@ class Dag:
                 function=_SourceStreamFunction(empty_factory, name),
                 empty_factory=empty_factory,
                 inputs=_NO_INPUTS,
+                frame_summaries=(),
             )
             if name:
                 self._sources[name] = node
@@ -477,8 +497,10 @@ class Dag:
         empty_factory = _check_empty(empty, empty_factory)
         _check_function(function)
 
-        def add_to_dag(inputs: _NodeInputs) -> Node:
-            return self._add_stream(function, empty_factory, inputs)
+        def add_to_dag(
+            inputs: _NodeInputs, frame_summaries: list[traceback.FrameSummary]
+        ) -> Node:
+            return self._add_stream(function, empty_factory, inputs, frame_summaries)
 
         return NodePrototype(add_to_dag)
 
@@ -494,8 +516,10 @@ class Dag:
         """
         _check_function(function)
 
-        def add_to_dag(inputs: _NodeInputs) -> Node:
-            return self._add_state(function, inputs)
+        def add_to_dag(
+            inputs: _NodeInputs, frame_summaries: tuple[traceback.FrameSummary]
+        ) -> Node:
+            return self._add_state(function, inputs, frame_summaries)
 
         return NodePrototype(add_to_dag)
 
@@ -516,6 +540,7 @@ class Dag:
                 function=_SinkFunction(name),
                 inputs=_NodeInputs.create([input_node], {}),
                 notifications=0,
+                frame_summaries=tuple(traceback.extract_stack()[:-1]),
             )
         )
 
@@ -695,9 +720,10 @@ class Dag:
 
     def _add_stream(
         self,
-        function: Callable[[...], T],
+        function: Callable[..., T],
         empty_factory: Callable[[], T],
         inputs: _NodeInputs,
+        frame_summaries: Sequence[traceback.FrameSummary],
     ) -> Node[T]:
         _check_function(function)
         return self._add_node(
@@ -706,6 +732,7 @@ class Dag:
                 function=function,
                 inputs=inputs,
                 empty_factory=empty_factory,
+                frame_summaries=tuple(frame_summaries),
             )
         )
 
@@ -719,9 +746,18 @@ class Dag:
 
         return count
 
-    def _add_state(self, function: Callable[[...], T], inputs: _NodeInputs) -> Node[T]:
+    def _add_state(
+        self,
+        function: Callable[..., T],
+        inputs: _NodeInputs,
+        frame_summaries: Sequence[traceback.FrameSummary],
+    ) -> Node[T]:
         _check_function(function)
-        return self._add_node(Node._create(function=function, inputs=inputs))
+        return self._add_node(
+            Node._create(
+                function=function, inputs=inputs, frame_summaries=frame_summaries
+            ),
+        )
 
     def _add_node(self, node: Node) -> Node:
         if len(node._observers) > 0:
