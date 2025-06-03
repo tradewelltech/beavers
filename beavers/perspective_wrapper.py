@@ -1,3 +1,5 @@
+"""DAG Wrapper to create a web application using perspective."""
+
 import dataclasses
 import pathlib
 from typing import Any, Literal, Optional, Sequence
@@ -33,9 +35,7 @@ ASSETS_DIRECTORY = str(_SOURCE_DIRECTORY / "assets")
 
 @dataclasses.dataclass(frozen=True)
 class PerspectiveTableDefinition:
-    """
-    API table definition
-    """
+    """API table definition."""
 
     name: str
     index_column: str
@@ -69,9 +69,7 @@ class PerspectiveTableDefinition:
 
 @dataclasses.dataclass(frozen=True)
 class _TableConfig:
-    """
-    Internal perspective table config, which is passed to the html template
-    """
+    """Internal perspective table config, which is passed to the html template."""
 
     name: str
     index: str
@@ -91,7 +89,7 @@ class _TableConfig:
 
 
 class TableRequestHandler(tornado.web.RequestHandler):
-    """Renders the table.html template, using the provided configurations"""
+    """Renders the table.html template, using the provided configurations."""
 
     _tables: Optional[dict[str, _TableConfig]] = None
     _default_table: Optional[str] = None
@@ -114,7 +112,7 @@ class TableRequestHandler(tornado.web.RequestHandler):
 
 
 def _table_to_bytes(table: pa.Table) -> bytes:
-    """Serialize a table as bytes, to pass it to a perspective table"""
+    """Serialize a table as bytes, to pass it to a perspective table."""
     with pa.BufferOutputStream() as sink:
         with pa.ipc.new_stream(sink, table.schema) as writer:
             for batch in table.to_batches():
@@ -137,7 +135,7 @@ class _PerspectiveNode:
     table: perspective.Table | None = None
 
     def __call__(self, table: pa.Table) -> None:
-        """Pass the arrow data to perspective"""
+        """Pass the arrow data to perspective."""
         self.table.update(_table_to_bytes(table))
 
     def get_table_config(self) -> _TableConfig:
@@ -183,6 +181,7 @@ DATA_TYPES = [
 
 
 def to_perspective_type(data_type: pa.DataType) -> Any:
+    """Convert a pyarrow DataType to a perspective type."""
     for predicate, perspective_type in DATA_TYPES:
         if predicate(data_type):
             return perspective_type
@@ -190,10 +189,11 @@ def to_perspective_type(data_type: pa.DataType) -> Any:
 
 
 def to_perspective_schema(schema: pa.Schema) -> dict[str, Any]:
+    """Convert a pyarrow Schema to a perspective schema."""
     return {f.name: to_perspective_type(f.type) for f in schema}
 
 
-def perspective_thread(
+def _perspective_thread(
     perspective_server: perspective.Server,
     kafka_driver: KafkaDriver,
     nodes: list[_PerspectiveNode],
@@ -218,6 +218,7 @@ def run_web_application(
     assets_directory: str = ASSETS_DIRECTORY,
     port: int = 8082,
 ) -> None:
+    """Run a tornado web application with perspective tables backed by a Beavers DAG."""
     server = perspective.Server()
 
     nodes: list[_PerspectiveNode] = []
@@ -251,5 +252,5 @@ def run_web_application(
     )
     web_app.listen(port)
     loop = tornado.ioloop.IOLoop.current()
-    loop.call_later(0, perspective_thread, server, kafka_driver, nodes)
+    loop.call_later(0, _perspective_thread, server, kafka_driver, nodes)
     loop.start()

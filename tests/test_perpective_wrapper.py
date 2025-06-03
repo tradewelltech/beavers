@@ -17,7 +17,7 @@ from beavers.perspective_wrapper import (
     _table_to_bytes,
     _TableConfig,
     _UpdateRunner,
-    perspective_thread,
+    _perspective_thread,
 )
 
 PERSPECTIVE_TABLE_SCHEMA = pa.schema(
@@ -118,7 +118,7 @@ class FakeLoop:
 def test_perspective_thread():
     manager = Server()
 
-    perspective_thread(manager, MagicMock(), [])
+    _perspective_thread(manager, MagicMock(), [])
 
 
 class TestHandler(AsyncHTTPTestCase):

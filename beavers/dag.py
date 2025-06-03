@@ -326,7 +326,8 @@ class Node(Generic[T]):
         except Exception as e:
             if self._frame_summaries:
                 raise RuntimeError(
-                    f"Unable to run node:\n{_format_frame_summaries(self._frame_summaries)}"
+                    "Unable to run node:\n"
+                    + _format_frame_summaries(self._frame_summaries)
                 ) from e
             else:
                 raise

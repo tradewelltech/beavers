@@ -1,3 +1,5 @@
+"""Utils to replay historical data in a DAG."""
+
 import dataclasses
 from typing import Callable
 
@@ -9,6 +11,8 @@ from beavers.replay import DataSink, DataSource
 
 
 class ArrowTableDataSource(DataSource[pa.Table]):
+    """A replay data source that replay data from an arrow Table."""
+
     def __init__(
         self, table: pa.Table, timestamp_extractor: Callable[[pa.Table], pa.Array]
     ):
@@ -42,6 +46,8 @@ class ArrowTableDataSource(DataSource[pa.Table]):
 
 @dataclasses.dataclass
 class ArrowTableDataSink(DataSink[pa.Table]):
+    """A data sink that save data in an arrow Table."""
+
     saver: Callable[[pa.Table], None]
     chunks: list[pa.Table] = dataclasses.field(default_factory=list)
 

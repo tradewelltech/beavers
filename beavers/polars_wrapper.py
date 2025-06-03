@@ -62,13 +62,12 @@ class PolarsDagWrapper:
         self, schema: pl.Schema, name: Optional[str] = None
     ) -> Node[pl.DataFrame]:
         """Add a source stream of type `pl.DataFrame`."""
-
         return self._dag.source_stream(empty=schema.to_frame(), name=name)
 
     def table_stream(
         self, function: Callable[P, pl.DataFrame], schema: pl.Schema
     ) -> NodePrototype[pl.DataFrame]:
-        """Add a stream node of output type `pl.DataFrame`"""
+        """Add a stream node of output type `pl.DataFrame`."""
         return self._dag.stream(function, empty=schema.to_frame())
 
     def filter_stream(
