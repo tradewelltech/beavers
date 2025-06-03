@@ -66,8 +66,9 @@ mkdocs serve --livereload --watch=./
 
 ## Updating dependencies
 
-- For the repo `poetry lock`
+- For the repo `poetry update`
 - For the doc: `(cd docs/; pip-compile ./requirements.in  > ./requirements.txt)`
+- For pre-commit: `pre-commit autoupdate`
 
 ## Resources
 
