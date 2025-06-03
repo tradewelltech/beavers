@@ -17,10 +17,10 @@ classifiers = [
 ]
 dependencies = [
   "confluent_kafka>=2.1.1",
-  "pandas>1.4.0",
+  "pandas",
   "perspective-python>=3.0.0",
   "polars",
-  "pyarrow>=12.0",
+  "pyarrow",
   "tornado"
 ]
 description = "Python stream processing"
