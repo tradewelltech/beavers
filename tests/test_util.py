@@ -1,7 +1,8 @@
 import collections
 import dataclasses
 import random
-from typing import Callable, Dict, Generic, TypeVar
+from typing import Generic, TypeVar
+from collections.abc import Callable
 
 import pandas as pd
 import pyarrow as pa
@@ -74,7 +75,7 @@ class WordCount:
         return self._counts
 
 
-def join_counts(**kwargs: Dict[str, int]) -> pd.DataFrame:
+def join_counts(**kwargs: dict[str, int]) -> pd.DataFrame:
     return pd.concat(
         [pd.Series(value, name=key) for key, value in kwargs.items()], axis=1
     ).fillna(0)

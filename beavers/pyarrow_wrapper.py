@@ -1,7 +1,8 @@
 """Module for building dags using pyarrow."""
 
 import dataclasses
-from typing import Callable, Iterable, Optional, ParamSpec, Sequence
+from typing import ParamSpec
+from collections.abc import Callable, Iterable, Sequence
 
 import numpy as np
 import pyarrow as pa
@@ -53,7 +54,7 @@ def _check_column(column: str, schema: pa.Schema):
 
 def _check_array(node: Node[pa.Array | pa.ChunkedArray]) -> pa.DataType:
     empty = node._get_empty()
-    if not isinstance(empty, (pa.Array, pa.ChunkedArray)):
+    if not isinstance(empty, pa.Array | pa.ChunkedArray):
         raise TypeError(f"Argument should be a {Node.__name__}[pa.Array]")
     else:
         return empty.type
@@ -97,7 +98,7 @@ class ArrowDagWrapper:
     _dag: Dag
 
     def source_table(
-        self, schema: pa.Schema, name: Optional[str] = None
+        self, schema: pa.Schema, name: str | None = None
     ) -> Node[pa.Table]:
         """Add a source stream of type `pa.Table`."""
         return self._dag.source_stream(empty=schema.empty_table(), name=name)

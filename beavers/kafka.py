@@ -5,7 +5,8 @@ import dataclasses
 import logging
 import time
 from enum import Enum
-from typing import Any, AnyStr, Generic, Optional, Protocol, Sequence, TypeVar
+from typing import Any, AnyStr, Generic, Protocol, TypeVar
+from collections.abc import Sequence
 
 import confluent_kafka
 import confluent_kafka.admin
@@ -63,10 +64,10 @@ class SourceTopic(Generic[T]):
     name: str
     message_deserializer: KafkaMessageDeserializer[T]
     offset_policy: OffsetPolicy
-    start_of_day_time: Optional[pd.Timedelta] = None
-    start_of_day_timezone: Optional[str] = None
-    relative_time: Optional[pd.Timedelta] = None
-    absolute_time: Optional[pd.Timestamp] = None
+    start_of_day_time: pd.Timedelta | None = None
+    start_of_day_timezone: str | None = None
+    relative_time: pd.Timedelta | None = None
+    absolute_time: pd.Timestamp | None = None
 
     @staticmethod
     def from_latest(
@@ -270,7 +271,7 @@ class _ConsumerManager:
         consumer_config: dict[str, Any],
         source_topics: list[SourceTopic],
         batch_size: int,
-        timeout: Optional[float],
+        timeout: float | None,
     ) -> "_ConsumerManager":
         consumer = confluent_kafka.Consumer(consumer_config)
         cutoff = pd.Timestamp.utcnow()
@@ -339,7 +340,7 @@ class _ConsumerManager:
                 return i
         return self._batch_size
 
-    def _get_priming_watermark(self) -> Optional[pd.Timestamp]:
+    def _get_priming_watermark(self) -> pd.Timestamp | None:
         if self._low_water_mark_ns < self._cutoff_ns:
             return pd.to_datetime(self._low_water_mark_ns, utc=True)
         else:
@@ -589,7 +590,7 @@ def _resolve_topics_offsets(
     consumer: confluent_kafka.Consumer,
     source_topics: list[SourceTopic],
     now: pd.Timestamp,
-    timeout: Optional[float] = None,
+    timeout: float | None = None,
 ) -> dict[confluent_kafka.TopicPartition, tuple[int, int]]:
     assignments = {}
     for source_topic in source_topics:
@@ -601,7 +602,7 @@ def _resolve_topic_offsets(
     consumer: confluent_kafka.Consumer,
     source_topic: SourceTopic,
     now: pd.Timestamp,
-    timeout: Optional[float] = None,
+    timeout: float | None = None,
 ) -> dict[confluent_kafka.TopicPartition, tuple[int, int]]:
     cluster_metadata: confluent_kafka.admin.ClusterMetadata = consumer.list_topics(
         source_topic.name, timeout

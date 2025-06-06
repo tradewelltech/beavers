@@ -2,7 +2,8 @@
 
 import dataclasses
 from operator import itemgetter
-from typing import Callable, Optional, ParamSpec, Iterable, Any
+from typing import ParamSpec, Any
+from collections.abc import Callable, Iterable
 
 import polars as pl
 from polars._typing import IntoExprColumn
@@ -59,7 +60,7 @@ class PolarsDagWrapper:
     _dag: Dag
 
     def source_table(
-        self, schema: pl.Schema, name: Optional[str] = None
+        self, schema: pl.Schema, name: str | None = None
     ) -> Node[pl.DataFrame]:
         """Add a source stream of type `pl.DataFrame`."""
 

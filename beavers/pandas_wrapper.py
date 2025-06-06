@@ -1,7 +1,8 @@
 """Module for building dags using pandas."""
 
 import dataclasses
-from typing import Callable, Optional, ParamSpec
+from typing import ParamSpec
+from collections.abc import Callable
 
 import pandas as pd
 
@@ -46,7 +47,7 @@ class PandasWrapper:
     _dag: Dag
 
     def source_df(
-        self, dtypes: pd.Series, name: Optional[str] = None
+        self, dtypes: pd.Series, name: str | None = None
     ) -> Node[pd.DataFrame]:
         empty = _empty_df(dtypes)
         return self._dag.source_stream(empty, name=name)
