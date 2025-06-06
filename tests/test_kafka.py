@@ -6,10 +6,11 @@ import dataclasses
 import io
 import logging
 import queue
-from typing import AnyStr, Callable, Optional, Sequence, Tuple, Union
+from typing import AnyStr
+from collections.abc import Callable, Sequence
 
 import confluent_kafka
-import mock
+from unittest import mock
 import pandas as pd
 import pytest
 from confluent_kafka import Message, TopicPartition
@@ -42,9 +43,9 @@ from tests.test_util import SetATimer, TimerEntry, create_word_count_dag
 def mock_kafka_message(
     topic: str = "",
     partition: int = 0,
-    timestamp: Union[None, int, pd.Timestamp] = None,
+    timestamp: None | int | pd.Timestamp = None,
     value: bytes = b"",
-    error: Optional[confluent_kafka.KafkaError] = None,
+    error: confluent_kafka.KafkaError | None = None,
     offset: int = 0,
     key: bytes = b"",
 ) -> Message:
@@ -66,11 +67,11 @@ def mock_kafka_message(
 
 
 class MockConsumer:
-    def __init__(self, topics: Optional[dict[str, TopicMetadata]] = None):
+    def __init__(self, topics: dict[str, TopicMetadata] | None = None):
         self._queue = queue.Queue()
         self._paused: list[TopicPartition] = []
         self._topics: dict[str, TopicMetadata] = dict(topics) if topics else {}
-        self._offsets_for_time: dict[Tuple[TopicPartition, int], TopicPartition] = {}
+        self._offsets_for_time: dict[tuple[TopicPartition, int], TopicPartition] = {}
         self._watermark_offsets: dict[TopicPartition, tuple[int, int]] = (
             {
                 TopicPartition(topic, partition_id): (0, 0)
@@ -90,7 +91,7 @@ class MockConsumer:
         for message in messages:
             self.append(message)
 
-    def poll(self, timeout: Optional[float]) -> Optional[Message]:
+    def poll(self, timeout: float | None) -> Message | None:
         try:
             return self._queue.get(block=True, timeout=timeout)
         except queue.Empty:
@@ -106,7 +107,7 @@ class MockConsumer:
             assert topic_partition in self._paused
             self._paused.remove(topic_partition)
 
-    def list_topics(self, topic_name, timeout: Optional[float]) -> ClusterMetadata:
+    def list_topics(self, topic_name, timeout: float | None) -> ClusterMetadata:
         results = ClusterMetadata()
         try:
             results.topics[topic_name] = self._topics[topic_name]
@@ -115,7 +116,7 @@ class MockConsumer:
         return results
 
     def offsets_for_times(
-        self, partitions: list[TopicPartition], timeout: Optional[float] = None
+        self, partitions: list[TopicPartition], timeout: float | None = None
     ) -> list[TopicPartition]:
         return [self._offsets_for_time[(p, p.offset)] for p in partitions]
 
@@ -129,9 +130,7 @@ class MockConsumer:
     def get_watermark_offsets(self, partition: TopicPartition) -> tuple[int, int]:
         return self._watermark_offsets[partition]
 
-    def committed(
-        self, partitions: list[TopicPartition], timeout: Optional[float] = None
-    ):
+    def committed(self, partitions: list[TopicPartition], timeout: float | None = None):
         return [
             TopicPartition(tp.topic, tp.partition, self._committed[tp])
             for tp in partitions

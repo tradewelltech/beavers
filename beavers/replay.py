@@ -5,7 +5,8 @@ import collections.abc
 import dataclasses
 import logging
 import time
-from typing import Callable, Generic, Iterator, Optional, Protocol, TypeVar
+from typing import Generic, Protocol, TypeVar
+from collections.abc import Callable, Iterator
 
 import pandas as pd
 
@@ -223,7 +224,7 @@ class ReplayDriver:
     def is_done(self) -> bool:
         return self.current_time > self.replay_context.end
 
-    def run_cycle(self) -> Optional[ReplayCycleMetrics]:
+    def run_cycle(self) -> ReplayCycleMetrics | None:
         st = time.time_ns()
         source_records, next_timestamp = self.read_sources()
         if source_records or self.dag.get_next_timer() <= self.current_time:
@@ -363,7 +364,7 @@ class IteratorDataSourceAdapter(DataSource[T]):
         else:
             return self._current.get_next()
 
-    def _next(self) -> Optional[DataSource]:
+    def _next(self) -> DataSource | None:
         try:
             return next(self._sources)
         except StopIteration:

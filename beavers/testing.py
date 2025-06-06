@@ -1,4 +1,5 @@
-from typing import Any, Optional, Sequence, TypeVar
+from typing import Any, TypeVar
+from collections.abc import Sequence
 
 import pandas as pd
 
@@ -22,7 +23,7 @@ class DagTestBench:
         source.set_stream(source_data)
         return self
 
-    def execute(self, now: Optional[pd.Timestamp] = None) -> "DagTestBench":
+    def execute(self, now: pd.Timestamp | None = None) -> "DagTestBench":
         self.dag.execute(now)
         return self
 

@@ -11,13 +11,11 @@ import traceback
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Generic,
-    Optional,
     ParamSpec,
-    Sequence,
     TypeVar,
 )
+from collections.abc import Callable, Sequence
 
 if TYPE_CHECKING:
     try:
@@ -75,9 +73,9 @@ class _SourceStreamFunction(Generic[T]):
 class _SinkFunction(Generic[T]):
     def __init__(self, name: str):
         self._name = name
-        self._value: Optional[T] = None
+        self._value: T | None = None
 
-    def get(self) -> Optional[T]:
+    def get(self) -> T | None:
         return self._value
 
     def __call__(self, value: T) -> None:
@@ -191,7 +189,7 @@ class _NodeInputs:
     nodes: tuple[Node, ...]
 
     @staticmethod
-    def create(positional: Sequence[Node], key_word: dict[str, Node]) -> "_NodeInputs":
+    def create(positional: Sequence[Node], key_word: dict[str, Node]) -> _NodeInputs:
         all_nodes = []
         for node in positional:
             _check_input(node)
@@ -221,7 +219,7 @@ _NO_INPUTS = _NodeInputs.create([], {})
 class _RuntimeNodeData(Generic[T]):
     """Stores mutable information about a node state."""
 
-    value: Optional[T]
+    value: T | None
     notifications: int
     cycle_id: int
 
@@ -242,7 +240,7 @@ class Node(Generic[T]):
     You shouldn't use them directly to read values (use sink for this)
     """
 
-    _function: Optional[Callable[..., T]]
+    _function: Callable[..., T] | None
     _inputs: _NodeInputs = dataclasses.field(repr=False)
     _empty_factory: Any
     _observers: list[Node] = dataclasses.field(repr=False)
@@ -252,7 +250,7 @@ class Node(Generic[T]):
     @staticmethod
     def _create(
         value: T = None,
-        function: Optional[Callable[..., T]] = None,
+        function: Callable[..., T] | None = None,
         inputs: _NodeInputs = _NO_INPUTS,
         empty_factory: Any = _STATE_EMPTY,
         notifications: int = 1,
@@ -431,9 +429,9 @@ class Dag:
 
     def source_stream(
         self,
-        empty: Optional[T] = None,
-        empty_factory: Optional[Callable[[], T]] = None,
-        name: Optional[str] = None,
+        empty: T | None = None,
+        empty_factory: Callable[[], T] | None = None,
+        name: str | None = None,
     ) -> Node[T]:
         """
         Add a source stream `Node`.
@@ -471,8 +469,8 @@ class Dag:
     def stream(
         self,
         function: Callable[P, T],
-        empty: Optional[T] = None,
-        empty_factory: Optional[Callable[[], T]] = None,
+        empty: T | None = None,
+        empty_factory: Callable[[], T] | None = None,
     ) -> NodePrototype:
         """
         Add a stream `NodePrototype`.
@@ -666,7 +664,7 @@ class Dag:
         """Return the last cycle id."""
         return self._cycle_id
 
-    def execute(self, timestamp: Optional[pd.Timestamp] = None):
+    def execute(self, timestamp: pd.Timestamp | None = None):
         """Run the dag for a given timestamp."""
         self._cycle_id += 1
         if timestamp is not None:
@@ -688,7 +686,7 @@ class Dag:
         return results
 
     @cached_property
-    def pa(self) -> "ArrowDagWrapper":
+    def pa(self) -> ArrowDagWrapper:
         """Returns the ArrowDagWrapper."""
         # Import dynamically because of circular dependency
         from beavers.pyarrow_wrapper import ArrowDagWrapper
@@ -696,14 +694,14 @@ class Dag:
         return ArrowDagWrapper(self)
 
     @cached_property
-    def pl(self) -> "PolarsDagWrapper":
+    def pl(self) -> PolarsDagWrapper:
         # Import dynamically because of circular dependency
         from beavers.polars_wrapper import PolarsDagWrapper
 
         return PolarsDagWrapper(self)
 
     @cached_property
-    def pd(self) -> "PandasWrapper":
+    def pd(self) -> PandasWrapper:
         """Returns the PandasWrapper."""
         # Import dynamically because of circular dependency
         from beavers.pandas_wrapper import PandasWrapper
@@ -711,7 +709,7 @@ class Dag:
         return PandasWrapper(self)
 
     @cached_property
-    def psp(self) -> "PerspectiveDagWrapper":
+    def psp(self) -> PerspectiveDagWrapper:
         """Returns the PerspectiveDagWrapper."""
         # Import dynamically because of circular dependency
         from beavers.perspective_wrapper import PerspectiveDagWrapper
@@ -773,7 +771,7 @@ class Dag:
 
 
 def _check_empty(
-    empty: Optional[T], empty_factory: Optional[Callable[[], T]]
+    empty: T | None, empty_factory: Callable[[], T] | None
 ) -> Callable[[], T]:
     if empty is not None and empty_factory is not None:
         raise ValueError(f"Can't provide both {empty=} and {empty_factory=}")
