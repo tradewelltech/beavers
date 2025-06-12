@@ -699,7 +699,7 @@ def _resolve_offset_for_time(
             confluent_kafka.TopicPartition(
                 topic=tp.topic, partition=tp.partition, offset=offset_ms
             )
-            for tp in watermarks.keys()
+            for tp in watermarks
         ],
         timeout,
     )

@@ -298,7 +298,7 @@ def _create_sources(
         _ReplaySource(
             name, source_nodes[name], data_source_providers[name](replay_context)
         )
-        for name in data_source_providers.keys()
+        for name in data_source_providers
     ]
 
 
@@ -316,7 +316,7 @@ def _create_sinks(
         )
     return [
         _ReplaySink(name, sink_nodes[name], data_sink_providers[name](replay_context))
-        for name in data_sink_providers.keys()
+        for name in data_sink_providers
     ]
 
 

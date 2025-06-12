@@ -37,6 +37,7 @@ from beavers.kafka import (
 )
 from beavers.kafka import logger as beavers_logger
 from tests.test_util import SetATimer, TimerEntry, create_word_count_dag
+import contextlib
 
 
 def mock_kafka_message(
@@ -108,10 +109,8 @@ class MockConsumer:
 
     def list_topics(self, topic_name, timeout: Optional[float]) -> ClusterMetadata:
         results = ClusterMetadata()
-        try:
+        with contextlib.suppress(KeyError):
             results.topics[topic_name] = self._topics[topic_name]
-        except KeyError:
-            pass
         return results
 
     def offsets_for_times(

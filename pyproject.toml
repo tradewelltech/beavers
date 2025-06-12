@@ -110,5 +110,8 @@ asyncio_mode = "auto"
 [tool.ruff]
 line-length = 88
 
+[tool.ruff.lint]
+extend-select = ["SIM"]
+
 [tool.ruff.lint.isort]
 known-first-party = ["beavers", "tradewell_proto"]

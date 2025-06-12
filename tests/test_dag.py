@@ -41,11 +41,11 @@ def test_state_positional():
 
     dag.execute()
 
-    assert 3 == z.get_value()
+    assert z.get_value() == 3
 
     x_source.set_stream([5])
     dag.execute()
-    assert 7 == z.get_value()
+    assert z.get_value() == 7
 
 
 def test_map_state_key_word():
@@ -58,11 +58,11 @@ def test_map_state_key_word():
     z = dag.state(add).map(left=x, right=y)
 
     dag.execute()
-    assert 3 == z.get_value()
+    assert z.get_value() == 3
 
     x_source.set_stream([5])
     dag.execute()
-    assert 7 == z.get_value()
+    assert z.get_value() == 7
 
 
 def test_map_positional_and_key_word_not_valid():
@@ -92,7 +92,7 @@ def test_map_runtime_failure():
     z = dag.state(add_no_42).map(x, y)
 
     dag.execute()
-    assert 41 == z.get_value()
+    assert z.get_value() == 41
 
     y_source.set_stream([2])
     with pytest.raises(RuntimeError, match=r"Unable to run node") as execinfo:
@@ -159,7 +159,7 @@ def test_stream_to_state():
     hello_stream.set_stream(["foo", "bar", "foo"])
     world_stream.set_stream(["z", "x", "y"])
     dag.execute()
-    assert 1 == both.get_cycle_id()
+    assert both.get_cycle_id() == 1
     assert both.get_value()["hello"]["foo"] == 2
     assert both.get_value()["hello"]["z"] == 0
     assert both.get_value()["world"]["foo"] == 0
@@ -168,14 +168,14 @@ def test_stream_to_state():
     hello_stream.set_stream(["foo"])
     world_stream.set_stream(["z"])
     dag.execute()
-    assert 2 == both.get_cycle_id()
+    assert both.get_cycle_id() == 2
     assert both.get_value()["hello"]["foo"] == 3
     assert both.get_value()["hello"]["z"] == 0
     assert both.get_value()["world"]["foo"] == 0
     assert both.get_value()["world"]["z"] == 2
 
     dag.execute()  # Nothing should happen here as inputs are flushed
-    assert 2 == both.get_cycle_id()
+    assert both.get_cycle_id() == 2
 
     hello_stream.set_stream([])
     world_stream.set_stream([])
@@ -191,7 +191,7 @@ def test_map_stream():
     plus_one = dag.stream(lambda x: [v + 1 for v in x], []).map(source)
     dag.execute()
 
-    assert [2, 3, 4] == plus_one.get_value()
+    assert plus_one.get_value() == [2, 3, 4]
 
 
 def test_add_stream():
@@ -202,7 +202,7 @@ def test_add_stream():
     plus_one = dag.stream(lambda x: [v + 1 for v in x], []).map(source)
     dag.execute()
 
-    assert [2, 3, 4] == plus_one.get_value()
+    assert plus_one.get_value() == [2, 3, 4]
 
 
 def test_map_stream_with_async_calls():
