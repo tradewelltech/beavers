@@ -10,11 +10,16 @@ Use kafka-kraft in docker for kafka:
 docker run --name=simple_kafka -p 9092:9092 -d bashj79/kafka-kraft
 ```
 
+If it needs to be started again:
+
+```shell
+docker start simple_kafka
+```
+
 ## `kafka_test_bench`
 
 Tests a simple application with kafka, making sure it replays in order.
 The "timestamp" of the output messages should be in order across topics when replaying.
-
 
 ### Create Topics
 
@@ -37,7 +42,7 @@ docker exec -it simple_kafka /opt/kafka/bin/kafka-console-producer.sh --bootstra
 docker exec -it simple_kafka /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server=localhost:9092 --topic=right
 ```
 
-### See out put data 
+### See out put data
 
 ```shell
 docker exec -it simple_kafka /opt/kafka/bin/kafka-console-consumer.sh \
