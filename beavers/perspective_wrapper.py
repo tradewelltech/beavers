@@ -1,3 +1,11 @@
+import tornado.websocket
+import tornado.web
+import tornado.ioloop
+import perspective
+import perspective.handlers.tornado
+import threading
+from functools import partial
+from concurrent.futures import ThreadPoolExecutor
 import dataclasses
 import pathlib
 from typing import Any, Literal, Optional, Sequence
@@ -213,12 +221,28 @@ def perspective_thread(
     callback.start()
 
 
+def poll_target(lock, perspective_server):
+    try:
+        perspective_server.poll()
+    finally:
+        lock.release()
+
+
+def on_poll_request(lock, executor, perspective_server):
+    if lock.acquire(blocking=False):
+        executor.submit(poll_target, lock, perspective_server)
+
+
 def run_web_application(
     kafka_driver: KafkaDriver,
     assets_directory: str = ASSETS_DIRECTORY,
     port: int = 8082,
 ) -> None:
-    server = perspective.Server()
+    executor = ThreadPoolExecutor()
+    lock = threading.Lock()
+    perspective_server = perspective.Server(
+        on_poll_request=partial(on_poll_request, lock, executor),
+    )
 
     nodes: list[_PerspectiveNode] = []
     for node in kafka_driver._dag._nodes:
@@ -234,7 +258,7 @@ def run_web_application(
             (
                 r"/websocket",
                 PerspectiveTornadoHandler,
-                {"perspective_server": server},
+                {"perspective_server": perspective_server},
             ),
             (
                 r"/assets/(.*)",
@@ -249,7 +273,7 @@ def run_web_application(
         ],
         serve_traceback=True,
     )
+
     web_app.listen(port)
     loop = tornado.ioloop.IOLoop.current()
-    loop.call_later(0, perspective_thread, server, kafka_driver, nodes)
     loop.start()
