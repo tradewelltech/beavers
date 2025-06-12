@@ -45,7 +45,6 @@
             const table = await websocket.open_table("{{table_config.name}}");
 
             viewer.load(table);
-
             let config = await viewer.save();
 
             config.name = "{{table_config.name}}";
