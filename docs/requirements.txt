@@ -38,7 +38,7 @@ markdown==3.8
     #   mkdocstrings
     #   pymdown-extensions
 markdown-include==0.8.1
-    # via -r ./requirements.in
+    # via -r requirements.in
 markupsafe==3.0.2
     # via
     #   jinja2
@@ -51,7 +51,7 @@ mergedeep==1.3.4
     #   mkdocs-get-deps
 mkdocs==1.6.1
     # via
-    #   -r ./requirements.in
+    #   -r requirements.in
     #   mkdocs-autorefs
     #   mkdocs-material
     #   mkdocstrings
@@ -62,14 +62,14 @@ mkdocs-autorefs==1.4.2
 mkdocs-get-deps==0.2.0
     # via mkdocs
 mkdocs-material==9.6.14
-    # via -r ./requirements.in
+    # via -r requirements.in
 mkdocs-material-extensions==1.3.1
     # via
-    #   -r ./requirements.in
+    #   -r requirements.in
     #   mkdocs-material
 mkdocstrings[python]==0.29.1
     # via
-    #   -r ./requirements.in
+    #   -r requirements.in
     #   mkdocstrings-python
 mkdocstrings-python==1.16.12
     # via mkdocstrings
@@ -85,7 +85,7 @@ pygments==2.19.1
     # via mkdocs-material
 pymdown-extensions==10.15
     # via
-    #   -r ./requirements.in
+    #   -r requirements.in
     #   mkdocs-material
     #   mkdocstrings
 python-dateutil==2.9.0.post0
@@ -104,7 +104,7 @@ six==1.17.0
     # via python-dateutil
 typing-extensions==4.14.0
     # via mkdocstrings-python
-urllib3==2.4.0
+urllib3==2.5.0
     # via requests
 watchdog==6.0.0
     # via mkdocs
