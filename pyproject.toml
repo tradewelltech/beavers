@@ -34,7 +34,6 @@ classifiers = [
   "Development Status :: 5 - Production/Stable",
   "License :: OSI Approved :: Apache Software License",
   "Natural Language :: English",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
@@ -59,7 +58,7 @@ maintainers = [
 name = "beavers"
 readme = "README.md"
 repository = "https://github.com/tradewelltech/beavers"
-requires-python = ">=3.10,<4"
+requires-python = ">=3.11,<4"
 
 [project.optional-dependencies]
 confluent-kafka = ["confluent-kafka"]
