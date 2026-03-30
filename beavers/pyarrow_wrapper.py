@@ -1,7 +1,8 @@
 """Module for building dags using pyarrow."""
 
 import dataclasses
-from typing import Callable, Iterable, Optional, ParamSpec, Sequence
+from typing import ParamSpec
+from collections.abc import Callable, Iterable, Sequence
 
 import numpy as np
 import pyarrow as pa
@@ -97,7 +98,7 @@ class ArrowDagWrapper:
     _dag: Dag
 
     def source_table(
-        self, schema: pa.Schema, name: Optional[str] = None
+        self, schema: pa.Schema, name: str | None = None
     ) -> Node[pa.Table]:
         """Add a source stream of type `pa.Table`."""
         return self._dag.source_stream(empty=schema.empty_table(), name=name)
