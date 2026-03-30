@@ -1,5 +1,5 @@
 default_language_version:
-  python: python3.10
+  python: python3.12
 repos:
   - repo: https://github.com/pycqa/pydocstyle
     rev: 6.3.0
@@ -10,20 +10,20 @@ repos:
           - tomli
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-toml
       - id: check-yaml
       - id: end-of-file-fixer
       - id: mixed-line-ending
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.11.12
+    rev: v0.15.8
     hooks:
       - id: ruff
         args: ['--fix']
       - id: ruff-format
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.8.3
+    rev: 1.9.4
     hooks:
       - id: bandit
         additional_dependencies:
@@ -31,13 +31,13 @@ repos:
         args:
           - "--config=pyproject.toml"
   - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-    rev: v2.14.0
+    rev: v2.16.0
     hooks:
       - id: pretty-format-toml
         files: "^.*.toml"
         args:
           - "--autofix"
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.7.2
+    rev: 0.11.2
     hooks:
       - id: uv-lock

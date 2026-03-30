@@ -6,7 +6,7 @@ Welcome! We're happy to have you here. Thank you in advance for your contributio
 
 ```shell
 uv sync --group dev
-pre-commit install
+uvx prek install
 ```
 
 ## Testing
@@ -65,7 +65,7 @@ uv run --group docs mkdocs serve --livereload --watch=./
 
 - For the repo `uv lock --upgrade`
 - For the doc: `uv pip compile docs/requirements.in -o docs/requirements.txt`
-- For pre-commit: `pre-commit autoupdate`
+- For pre-commit: `uvx prek autoupdate`
 
 ## Resources
 

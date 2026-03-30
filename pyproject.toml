@@ -2,6 +2,31 @@
 build-backend = "hatchling.build"
 requires = ["hatchling", "hatch-vcs"]
 
+[dependency-groups]
+dev = [
+  "black>=22.10.0",
+  "click>=8.1.7",
+  "coverage>=6.5.0",
+  "flake8>=5.0.4",
+  "git-changelog>=2.2.0",
+  "isort>=5.10.1",
+  "mock",
+  "pre-commit>=2.20.0",
+  "pylint>=2.15.0",
+  "pytest>=7.2.0",
+  "pytest-asyncio",
+  "tabulate"
+]
+docs = [
+  "markdown-include",
+  "mkdocs>=1.5.3",
+  "mkdocs-material>=9.3.2",
+  "mkdocs-material-extensions",
+  "mkdocstrings[python]>=0.21.2",
+  "pymdown-extensions",
+  "tornado"
+]
+
 [project]
 authors = [
   {name = "Tradewell Tech", email = "engineering@tradewelltech.co"}
@@ -45,31 +70,6 @@ pyarrow = ["pyarrow"]
 [project.urls]
 "Bug Tracker" = "https://github.com/tradewelltech/beavers/issues"
 "Changelog" = "https://github.com/tradewelltech/beavers/blob/main/CHANGELOG.md"
-
-[dependency-groups]
-dev = [
-  "black>=22.10.0",
-  "click>=8.1.7",
-  "coverage>=6.5.0",
-  "flake8>=5.0.4",
-  "git-changelog>=2.2.0",
-  "isort>=5.10.1",
-  "mock",
-  "pre-commit>=2.20.0",
-  "pylint>=2.15.0",
-  "pytest>=7.2.0",
-  "pytest-asyncio",
-  "tabulate",
-]
-docs = [
-  "markdown-include",
-  "mkdocs>=1.5.3",
-  "mkdocs-material>=9.3.2",
-  "mkdocs-material-extensions",
-  "mkdocstrings[python]>=0.21.2",
-  "pymdown-extensions",
-  "tornado",
-]
 
 [tool.bandit]
 skips = ["B101", "B311"]

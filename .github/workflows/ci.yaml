@@ -66,5 +66,5 @@ jobs:
       - name: Setup Python
         run: uv python install 3.10
 
-      - name: Run pre-commit
-        run: uvx pre-commit run --all-files --show-diff-on-failure
+      - name: Run prek
+        run: uvx prek run --all-files --show-diff-on-failure
