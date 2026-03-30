@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import perspective
 import pyarrow as pa
 import pytest
-from mock import mock
+from unittest import mock
 from perspective import Server
 from tornado.testing import AsyncHTTPTestCase
 from tornado.web import Application

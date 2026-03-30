@@ -1,6 +1,7 @@
 import dataclasses
 import pathlib
-from typing import Any, Literal, Optional, Sequence
+from typing import Any, Literal
+from collections.abc import Sequence
 
 import perspective
 import pyarrow as pa
@@ -39,13 +40,13 @@ class PerspectiveTableDefinition:
 
     name: str
     index_column: str
-    remove_column: Optional[str] = None
+    remove_column: str | None = None
     sort: list[tuple[str, Literal["asc", "desc"]]] = dataclasses.field(
         default_factory=list
     )
     filters: list[tuple[str, str, Any]] = dataclasses.field(default_factory=list)
     hidden_columns: Sequence[str] = ()
-    limit: Optional[int] = None
+    limit: int | None = None
 
     def validate(self, schema: pa.Schema):
         assert self.index_column in schema.names, self.index_column
@@ -93,8 +94,8 @@ class _TableConfig:
 class TableRequestHandler(tornado.web.RequestHandler):
     """Renders the table.html template, using the provided configurations"""
 
-    _tables: Optional[dict[str, _TableConfig]] = None
-    _default_table: Optional[str] = None
+    _tables: dict[str, _TableConfig] | None = None
+    _default_table: str | None = None
 
     def initialize(self, table_configs: list[_TableConfig]) -> None:
         self._tables = {
@@ -154,7 +155,7 @@ class PerspectiveDagWrapper:
         self,
         node: Node,
         table_definition: PerspectiveTableDefinition,
-        schema: Optional[pa.Schema] = None,
+        schema: pa.Schema | None = None,
     ) -> None:
         """Add a source stream of type `pa.Table`."""
         if schema is None:

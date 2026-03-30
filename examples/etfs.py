@@ -5,7 +5,8 @@ Example of ETF nav (Net Asset Value) calculation
 import dataclasses
 import random
 from operator import attrgetter
-from typing import Callable, Generic, Optional, TypeVar
+from typing import Generic, TypeVar
+from collections.abc import Callable
 
 import numpy as np
 import pandas as pd
@@ -20,7 +21,7 @@ V = TypeVar("V")
 class PriceRecord:
     timestamp: pd.Timestamp
     ticker: str
-    price: Optional[float]
+    price: float | None
 
 
 @dataclasses.dataclass(frozen=True)

@@ -2,7 +2,8 @@ import functools
 import json
 import logging
 from operator import itemgetter
-from typing import Any, Callable, Sequence
+from typing import Any
+from collections.abc import Callable, Sequence
 
 import click
 import confluent_kafka

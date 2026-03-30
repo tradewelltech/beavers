@@ -1,7 +1,7 @@
 # ruff: noqa: E402
 # isort: skip_file
 
-from typing import Sequence, Optional
+from collections.abc import Sequence
 
 # --8<-- [start:schema]
 import pyarrow as pa
@@ -75,7 +75,7 @@ from beavers.perspective_wrapper import run_web_application
 def run_dashboard(
     topic: str = "key-value",
     port: int = 8082,
-    consumer_config: Optional[dict] = None,
+    consumer_config: dict | None = None,
 ):
     if consumer_config is None:
         consumer_config = {"bootstrap.servers": "localhost:9092", "group.id": "beavers"}
