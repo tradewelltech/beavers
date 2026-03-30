@@ -92,7 +92,6 @@ dev = [
     { name = "click" },
     { name = "coverage" },
     { name = "flake8" },
-    { name = "git-changelog" },
     { name = "isort" },
     { name = "mock" },
     { name = "pre-commit" },
@@ -133,7 +132,6 @@ dev = [
     { name = "click", specifier = ">=8.1.7" },
     { name = "coverage", specifier = ">=6.5.0" },
     { name = "flake8", specifier = ">=5.0.4" },
-    { name = "git-changelog", specifier = ">=2.2.0" },
     { name = "isort", specifier = ">=5.10.1" },
     { name = "mock" },
     { name = "pre-commit", specifier = ">=2.20.0" },
@@ -549,23 +547,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/d9/29/d40217cbe2f6b1359e00c6c307bb3fc876ba74068cbab3dde77f03ca0dc4/ghp-import-2.1.0.tar.gz", hash = "sha256:9c535c4c61193c2df8871222567d7fd7e5014d835f97dc7b7439069e2413d343", size = 10943, upload-time = "2022-05-02T15:47:16.11Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f7/ec/67fbef5d497f86283db54c22eec6f6140243aae73265799baaaa19cd17fb/ghp_import-2.1.0-py3-none-any.whl", hash = "sha256:8337dd7b50877f163d4c0289bc1f1c7f127550241988d568c1db512c4324a619", size = 11034, upload-time = "2022-05-02T15:47:14.552Z" },
-]
-
-[[package]]
-name = "git-changelog"
-version = "2.9.3"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "jinja2" },
-    { name = "packaging" },
-    { name = "platformdirs" },
-    { name = "semver" },
-    { name = "tomli", marker = "python_full_version < '3.11'" },
-    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/4f/a2/c9c89ac642ec0b2ef8e901bffc96d02659b3d841e896c45a48db5714928c/git_changelog-2.9.3.tar.gz", hash = "sha256:9b07d325a1047e84e095e7706283a78e3854f73abee986b92e48d4617585b269", size = 90638, upload-time = "2026-03-26T15:02:17.372Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/95/89/d2007241cc487e024dc9a3201bc4fa281d1cb28376026320c5ab544d5967/git_changelog-2.9.3-py3-none-any.whl", hash = "sha256:cd1cde7cab8f6f86fc587e77165f6234f67fdf1154ac06a8540693ec7f553b22", size = 40649, upload-time = "2026-03-26T15:02:15.891Z" },
 ]
 
 [[package]]
@@ -1597,15 +1578,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/34/64/8860370b167a9721e8956ae116825caff829224fbca0ca6e7bf8ddef8430/requests-2.33.0.tar.gz", hash = "sha256:c7ebc5e8b0f21837386ad0e1c8fe8b829fa5f544d8df3b2253bff14ef29d7652", size = 134232, upload-time = "2026-03-25T15:10:41.586Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/56/5d/c814546c2333ceea4ba42262d8c4d55763003e767fa169adc693bd524478/requests-2.33.0-py3-none-any.whl", hash = "sha256:3324635456fa185245e24865e810cecec7b4caf933d7eb133dcde67d48cee69b", size = 65017, upload-time = "2026-03-25T15:10:40.382Z" },
-]
-
-[[package]]
-name = "semver"
-version = "3.0.4"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/72/d1/d3159231aec234a59dd7d601e9dd9fe96f3afff15efd33c1070019b26132/semver-3.0.4.tar.gz", hash = "sha256:afc7d8c584a5ed0a11033af086e8af226a9c0b206f313e0301f8dd7b6b589602", size = 269730, upload-time = "2025-01-24T13:19:27.617Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a6/24/4d91e05817e92e3a61c8a21e08fd0f390f5301f1c448b137c57c4bc6e543/semver-3.0.4-py3-none-any.whl", hash = "sha256:9c824d87ba7f7ab4a1890799cec8596f15c1241cb473404ea1cb0c55e4b04746", size = 17912, upload-time = "2025-01-24T13:19:24.949Z" },
 ]
 
 [[package]]

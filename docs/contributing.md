@@ -24,28 +24,9 @@ uv run coverage run --branch --rcfile=./pyproject.toml --include "./beavers/*" -
 uv run coverage report --show-missing
 ```
 
-## Generating the change log
-
-We use [git-change-log](https://pawamoy.github.io/git-changelog/usage/) to generate our CHANGELOG.md
-
-Please follow the [basic convention](https://pawamoy.github.io/git-changelog/usage/#basic-convention) for commit
-message.
-
-To update the change log, run:
-
-```shell
-uv run git-changelog -io CHANGELOG.md
-```
-
 ## New Release
 
-For new release, first prepare the change log, push and merge it.
-
-```shell
-uv run git-changelog --bump=auto -io CHANGELOG.md
-```
-
-Then tag and push:
+Tag and push:
 
 ```shell
 git tag vX.X.X
