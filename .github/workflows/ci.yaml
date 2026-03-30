@@ -12,7 +12,6 @@ jobs:
     strategy:
       matrix:
         python:
-          - "3.10"
           - "3.11"
           - "3.12"
           - "3.13"
@@ -33,6 +32,7 @@ jobs:
         with:
           version: "0.11.1"
           python-version: ${{ matrix.python }}
+          enable-cache: true
 
       - name: Install dependencies
         run: uv sync --group dev --extra pyarrow --extra confluent-kafka --extra polars
@@ -81,6 +81,13 @@ jobs:
         with:
           version: "0.11.1"
           python-version: ${{ matrix.python }}
+          enable-cache: true
+
+      - name: Cache pre-commit hooks
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ matrix.python }}-${{ hashFiles('.pre-commit-config.yaml') }}
 
       - name: Run prek
         run: uvx prek run --all-files --show-diff-on-failure

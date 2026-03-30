@@ -85,5 +85,5 @@ for both realtime and batch jobs.
 [ruff-url]: https://github.com/astral-sh/ruff
 [prek-image]: https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit
 [prek-url]: https://github.com/pre-commit/pre-commit
-[snyk-image]: https://snyk.io/advisor/python/beavers/badge.svg
+[snyk-image]: https://snyk.io/test/github/tradewelltech/beavers/badge.svg
 [snyk-url]: https://snyk.io/advisor/python/beavers
