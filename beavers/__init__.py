@@ -1,4 +1,10 @@
 from beavers.dag import Dag, Node, TimerManager
 
-__version__ = "0.0.0"
-__all__ = ["Dag", "Node", "TimerManager"]
+from beavers._version import __version__
+
+__all__ = [
+    "Dag",
+    "Node",
+    "TimerManager",
+    "__version__",
+]

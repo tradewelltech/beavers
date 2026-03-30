@@ -52,7 +52,6 @@ nav:
     - concepts/advanced.md
     - concepts/replay.md
     - concepts/kafka.md
-    - concepts/pandas.md
     - concepts/pyarrow.md
     - concepts/polars.md
     - concepts/perspective.md
@@ -60,7 +59,6 @@ nav:
     - reference/dag.md
     - reference/replay.md
     - reference/kafka.md
-    - reference/pandas_wrapper.md
     - reference/pyarrow_wrapper.md
   - install.md
   - contributing.md

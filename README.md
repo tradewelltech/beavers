@@ -8,7 +8,8 @@
 [![License][license-image]][license-url]
 [![Downloads][downloads-image]][downloads-url]
 [![Downloads][downloads-month-image]][downloads-month-url]
-[![Code style: black][codestyle-image]][codestyle-url]
+[![Ruff][ruff-image]][ruff-url]
+[![prek][prek-image]][prek-url]
 [![snyk][snyk-image]][snyk-url]
 <a href="https://trackgit.com">
 <img src="https://us-central1-trackgit-analytics.cloudfunctions.net/token/ping/m7c1fpbnueo78pkcetcm" alt="trackgit-views" />
@@ -80,7 +81,9 @@ for both realtime and batch jobs.
 [downloads-url]: https://static.pepy.tech/badge/beavers
 [downloads-month-image]: https://pepy.tech/badge/beavers/month
 [downloads-month-url]: https://static.pepy.tech/badge/beavers/month
-[codestyle-image]: https://img.shields.io/badge/code%20style-black-000000.svg
-[codestyle-url]: https://github.com/ambv/black
+[ruff-image]: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json
+[ruff-url]: https://github.com/astral-sh/ruff
+[prek-image]: https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit
+[prek-url]: https://github.com/pre-commit/pre-commit
 [snyk-image]: https://snyk.io/advisor/python/beavers/badge.svg
 [snyk-url]: https://snyk.io/advisor/python/beavers

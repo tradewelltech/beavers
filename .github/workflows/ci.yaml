@@ -7,39 +7,80 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version:
+        python:
           - "3.10"
           - "3.11"
           - "3.12"
           - "3.13"
+          - "3.14"
       fail-fast: false
+    env:
+      UV_PYTHON: ${{ matrix.python }}
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
-          python-version: ${{ matrix.python-version }}
-          cache: "pip"
+          python-version: ${{ matrix.python }}
 
-      - name: Install pip
-        run: "python -m pip install --upgrade pip"
-      - name: Install tox and poetry
-        run: "python -m pip install tox tox-gh-actions poetry==2.1.1"
-      - name: Install poetry plugin
-        run: 'poetry self add "poetry-dynamic-versioning[plugin]"'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.11.1"
+          python-version: ${{ matrix.python }}
 
-      - name: Run tox
-        run: tox
+      - name: Install dependencies
+        run: uv sync --group dev --extra pyarrow --extra confluent-kafka --extra polars
+
+      - name: Run tests
+        run: uv run coverage run --source=beavers --rcfile=pyproject.toml --branch -m pytest tests
+
+      - name: Run examples
+        run: |
+          uv run python examples/advanced_concepts.py
+          uv run python examples/dag_concepts.py
+          uv run python examples/etfs.py
+          uv run python examples/polars_concepts.py
+          uv run python examples/pyarrow_concepts.py
+          uv run python examples/replay_concepts.py
+
+      - name: Check coverage
+        run: |
+          uv run coverage report --rcfile=pyproject.toml -m --fail-under 95
+          uv run coverage xml --rcfile=pyproject.toml -o coverage.xml
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        if: "matrix.python-version == '3.10'"
+        uses: codecov/codecov-action@v6
+        if: "matrix.python == '3.12'"
         with:
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python:
+          - "3.12"
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.11.1"
+          python-version: ${{ matrix.python }}
+
+      - name: Run prek
+        run: uvx prek run --all-files --show-diff-on-failure

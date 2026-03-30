@@ -166,3 +166,6 @@ cython_debug/
 /venv
 *.csv
 coverrage.xml
+
+# hatch-vcs generated version file
+beavers/_version.py
