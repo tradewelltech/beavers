@@ -22,9 +22,9 @@ jobs:
       UV_PYTHON: ${{ matrix.python }}
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
 
@@ -55,7 +55,7 @@ jobs:
           uv run coverage xml --rcfile=pyproject.toml -o coverage.xml
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v6
         if: "matrix.python == '3.12'"
         with:
           fail_ci_if_error: true
@@ -70,9 +70,9 @@ jobs:
 
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
 
