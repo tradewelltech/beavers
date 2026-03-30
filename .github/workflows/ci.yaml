@@ -11,24 +11,31 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version:
+        python:
           - "3.10"
           - "3.11"
           - "3.12"
           - "3.13"
+          - "3.14"
       fail-fast: false
+    env:
+      UV_PYTHON: ${{ matrix.python }}
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
 
-      - name: Setup Python
-        run: uv python install ${{ matrix.python-version }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.11.1"
+          python-version: ${{ matrix.python }}
 
       - name: Install dependencies
-        run: uv sync --python ${{ matrix.python-version }} --group dev --extra pyarrow --extra confluent-kafka --extra polars
+        run: uv sync --group dev --extra pyarrow --extra confluent-kafka --extra polars
 
       - name: Run tests
         run: uv run coverage run --source=beavers --rcfile=pyproject.toml --branch -m pytest tests
@@ -49,22 +56,31 @@ jobs:
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
-        if: "matrix.python-version == '3.10'"
+        if: "matrix.python == '3.12'"
         with:
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
 
   lint:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python:
+          - "3.12"
+
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
 
-      - name: Setup Python
-        run: uv python install 3.10
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.11.1"
+          python-version: ${{ matrix.python }}
 
       - name: Run prek
         run: uvx prek run --all-files --show-diff-on-failure
