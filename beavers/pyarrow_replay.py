@@ -15,8 +15,10 @@ class ArrowTableDataSource(DataSource[pa.Table]):
         assert callable(timestamp_extractor)
         self._table = table
         self._empty_table = table.schema.empty_table()
-        self._timestamp_column = timestamp_extractor(table).to_pandas(
-            date_as_object=False
+        self._timestamp_column = (
+            timestamp_extractor(table)
+            .cast(pa.timestamp("ns", tz="UTC"))
+            .to_pandas(date_as_object=False)
         )
         assert self._timestamp_column.is_monotonic_increasing, (
             "Timestamp column should be monotonic increasing"

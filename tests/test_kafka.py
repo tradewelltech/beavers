@@ -315,7 +315,7 @@ def test_consumer_manager_update_partition_info():
     assert consumer_manager._low_water_mark_ns == cutoff.value
 
     with mock.patch(
-        "pandas.Timestamp.utcnow",
+        "pandas.Timestamp.now",
         return_value=cutoff + pd.to_timedelta("20s"),
     ):
         consumer_manager._update_partition_info(
@@ -652,7 +652,7 @@ def test_kafka_driver_timer():
     assert dag.get_next_timer() == cutoff + pd.to_timedelta("20s")
 
     with mock.patch(
-        "pandas.Timestamp.utcnow",
+        "pandas.Timestamp.now",
         return_value=cutoff + pd.to_timedelta("20s"),
     ):
         # This should trigger the timer, but we're not pass the cutoff
@@ -666,7 +666,7 @@ def test_kafka_driver_timer():
     # Publish EOF message
     mock_consumer.append(mock_kafka_message("topic-a", 0, None, b"", offset=3))
     with mock.patch(
-        "pandas.Timestamp.utcnow",
+        "pandas.Timestamp.now",
         # Cheating a bit and go back in time:
         return_value=cutoff + pd.to_timedelta("10s"),
     ):
@@ -675,7 +675,7 @@ def test_kafka_driver_timer():
         assert dag.get_next_timer() == cutoff + pd.to_timedelta("20s")
 
     with mock.patch(
-        "pandas.Timestamp.utcnow",
+        "pandas.Timestamp.now",
         return_value=cutoff + pd.to_timedelta("20s"),
     ):
         assert kafka_driver.run_cycle(0.0) is True
@@ -910,7 +910,7 @@ def test_all_partitions_eof():
     # Start with a lot of message, they will be held and some partitions paused
     mock_consumer.extend([])
     with mock.patch(
-        "pandas.Timestamp.utcnow",
+        "pandas.Timestamp.now",
         return_value=cutoff + pd.to_timedelta("20s"),
     ):
         assert [m.value() for m in consumer_manager.poll(0.0)] == []

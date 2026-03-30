@@ -273,7 +273,7 @@ class _ConsumerManager:
         timeout: Optional[float],
     ) -> "_ConsumerManager":
         consumer = confluent_kafka.Consumer(consumer_config)
-        cutoff = pd.Timestamp.utcnow()
+        cutoff = pd.Timestamp.now("UTC")
         offsets = _resolve_topics_offsets(consumer, source_topics, cutoff, timeout)
         for tp, (start, end) in offsets.items():
             logger.debug(
@@ -391,7 +391,7 @@ class _ConsumerManager:
             partition_info.current_offset = message.offset()
         self._low_water_mark_ns = min(
             (v.timestamp_ns for v in self._partition_info.values() if not v.is_live()),
-            default=pd.Timestamp.utcnow().value,
+            default=pd.Timestamp.now("UTC").value,
         )
 
 
@@ -567,7 +567,7 @@ class KafkaDriver:
             for handler in self._source_topics.values():
                 has_messages = handler.flush() or has_messages
         self._cycle_time = (
-            self._consumer_manager._get_priming_watermark() or pd.Timestamp.utcnow()
+            self._consumer_manager._get_priming_watermark() or pd.Timestamp.now("UTC")
         )
 
         if has_messages or self._dag.get_next_timer() <= self._cycle_time:
@@ -659,7 +659,7 @@ def _get_previous_start_of_day(
         return (local_now.normalize() + start_of_day_time).tz_convert("UTC")
     else:
         return (
-            local_now.normalize() - pd.to_timedelta("1d") + start_of_day_time
+            local_now.normalize() - pd.to_timedelta("1D") + start_of_day_time
         ).tz_convert("UTC")
 
 

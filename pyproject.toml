@@ -1,6 +1,6 @@
 [build-system]
-build-backend = "poetry_dynamic_versioning.backend"
-requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]
+build-backend = "hatchling.build"
+requires = ["hatchling", "hatch-vcs"]
 
 [project]
 authors = [
@@ -25,19 +25,16 @@ dependencies = [
 ]
 description = "Python stream processing"
 documentation = "https://beavers.readthedocs.io/en/latest/"
+dynamic = ["version"]
 keywords = ["apache-arrow", "streaming", "data"]
 license = "Apache-2.0"
 maintainers = [
   {name = "0x26res", email = "0x26res@gmail.com"}
 ]
 name = "beavers"
-packages = [
-  {include = "beavers"}
-]
 readme = "README.md"
 repository = "https://github.com/tradewelltech/beavers"
 requires-python = ">=3.10,<4"
-version = "0.0.0"
 
 [project.optional-dependencies]
 confluent-kafka = ["confluent-kafka"]
@@ -48,6 +45,31 @@ pyarrow = ["pyarrow"]
 [project.urls]
 "Bug Tracker" = "https://github.com/tradewelltech/beavers/issues"
 "Changelog" = "https://github.com/tradewelltech/beavers/blob/main/CHANGELOG.md"
+
+[dependency-groups]
+dev = [
+  "black>=22.10.0",
+  "click>=8.1.7",
+  "coverage>=6.5.0",
+  "flake8>=5.0.4",
+  "git-changelog>=2.2.0",
+  "isort>=5.10.1",
+  "mock",
+  "pre-commit>=2.20.0",
+  "pylint>=2.15.0",
+  "pytest>=7.2.0",
+  "pytest-asyncio",
+  "tabulate",
+]
+docs = [
+  "markdown-include",
+  "mkdocs>=1.5.3",
+  "mkdocs-material>=9.3.2",
+  "mkdocs-material-extensions",
+  "mkdocstrings[python]>=0.21.2",
+  "pymdown-extensions",
+  "tornado",
+]
 
 [tool.bandit]
 skips = ["B101", "B311"]
@@ -66,39 +88,11 @@ omit = [
   "*/beavers/perspective_wrapper.py"
 ]
 
-[tool.poetry.group.dev.dependencies]
-black = ">=22.10.0"
-click = ">=8.1.7"
-coverage = ">=6.5.0"
-flake8 = ">=5.0.4"
-git-changelog = ">=2.2.0"
-isort = ">=5.10.1"
-mock = "*"
-pip-tools = ">=6.12.1"
-pre-commit = ">=2.20.0"
-pylint = ">=2.15.0"
-pytest = ">=7.2.0"
-pytest-asyncio = "*"
-tabulate = "*"
+[tool.hatch.build.hooks.vcs]
+version-file = "beavers/_version.py"
 
-[tool.poetry.group.docs]
-optional = true
-
-[tool.poetry.group.docs.dependencies]
-markdown-include = "*"
-mkdocs = ">=1.5.3"
-mkdocs-material = ">=9.3.2"
-mkdocs-material-extensions = "*"
-mkdocstrings = {version = ">=0.21.2", extras = ["python"]}
-pymdown-extensions = "*"
-tornado = "*"
-
-[tool.poetry-dynamic-versioning]
-enable = true
-
-[tool.poetry-dynamic-versioning.substitution]
-files = ["*/__init__.py"]
-folders = [{path = "beavers"}]
+[tool.hatch.version]
+source = "vcs"
 
 [tool.pydocstyle]
 ignore = ["D102", "D107", "D203", "D212"]

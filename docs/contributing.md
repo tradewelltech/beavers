@@ -5,10 +5,7 @@ Welcome! We're happy to have you here. Thank you in advance for your contributio
 ## Development environment set up
 
 ```shell
-python3 -m venv --clear venv
-source venv/bin/activate
-poetry self add "poetry-dynamic-versioning[plugin]"
-poetry install
+uv sync --group dev
 pre-commit install
 ```
 
@@ -17,14 +14,14 @@ pre-commit install
 To run tests fast:
 
 ```shell
-pytest -n auto tests
+uv run pytest -n auto tests
 ```
 
 To Get coverage:
 
 ```shell
-coverage run --branch --rcfile=./pyproject.toml --include "./beavers/*" -m pytest tests
-coverage report --show-missing
+uv run coverage run --branch --rcfile=./pyproject.toml --include "./beavers/*" -m pytest tests
+uv run coverage report --show-missing
 ```
 
 ## Generating the change log
@@ -37,7 +34,7 @@ message.
 To update the change log, run:
 
 ```shell
-git-changelog -io CHANGELOG.md
+uv run git-changelog -io CHANGELOG.md
 ```
 
 ## New Release
@@ -45,7 +42,7 @@ git-changelog -io CHANGELOG.md
 For new release, first prepare the change log, push and merge it.
 
 ```shell
-git-changelog --bump=auto -io CHANGELOG.md
+uv run git-changelog --bump=auto -io CHANGELOG.md
 ```
 
 Then tag and push:
@@ -61,13 +58,13 @@ The CI will deploy to pypi automatically from then.
 ## Testing the documentation
 
 ```shell
-mkdocs serve --livereload --watch=./
+uv run --group docs mkdocs serve --livereload --watch=./
 ```
 
 ## Updating dependencies
 
-- For the repo `poetry update`
-- For the doc: `(cd docs/; pip-compile ./requirements.in  > ./requirements.txt)`
+- For the repo `uv lock --upgrade`
+- For the doc: `uv pip compile docs/requirements.in -o docs/requirements.txt`
 - For pre-commit: `pre-commit autoupdate`
 
 ## Resources
