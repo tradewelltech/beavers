@@ -80,9 +80,9 @@ timestamp_stream.set_stream(
 )
 dag.execute(timestamp=pd.to_datetime("2022-01-04", utc=True))
 assert delay.get_value() == [
-    pd.to_timedelta("3d"),
-    pd.to_timedelta("2d"),
-    pd.to_timedelta("1d"),
+    pd.to_timedelta("3D"),
+    pd.to_timedelta("2D"),
+    pd.to_timedelta("1D"),
 ]
 
 # --8<-- [end:now_node]
