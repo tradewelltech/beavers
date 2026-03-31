@@ -106,7 +106,7 @@ class ArrowDagWrapper:
     def table_stream(
         self, function: Callable[P, pa.Table], schema: pa.Schema
     ) -> NodePrototype[pa.Table]:
-        """Add a stream node of output type `pa.Table`"""
+        """Add a stream node of output type `pa.Table`."""
         return self._dag.stream(function, empty=schema.empty_table())
 
     def filter_stream(
@@ -143,6 +143,7 @@ class ArrowDagWrapper:
     def concat_arrays(
         self, *streams: Node[pa.Array | pa.ChunkedArray]
     ) -> Node[pa.ChunkedArray]:
+        """Concatenate multiple array streams into a single chunked array."""
         if len(streams) == 0:
             raise ValueError("Must pass at least one array")
         array_type = None

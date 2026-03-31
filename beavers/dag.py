@@ -93,8 +93,7 @@ class _ValueCutOff(Generic[T]):
 
 
 class TimerManager:
-    """
-    API for setting and accessing timer for a given `Node`.
+    """API for setting and accessing timer for a given `Node`.
 
     - Timers are represented as `pd.Timestamp` with UTC timestamp.
     - A timer of `UTC_MAX` means no timer.
@@ -141,8 +140,7 @@ class TimerManager:
 
 
 class _TimerManagerFunction:
-    """
-    Function for `TimerManager` nodes.
+    """Function for `TimerManager` nodes.
 
     Used by the framework to trigger timers.
     """
@@ -156,8 +154,7 @@ class _TimerManagerFunction:
 
 @dataclasses.dataclass(frozen=True)
 class SilentUpdate(Generic[T]):
-    """
-    Wrap a value to make the update silent.
+    """Wrap a value to make the update silent.
 
     Silent updates mean the value changed, but downstream nodes don't get notified.
     """
@@ -222,8 +219,7 @@ class _RuntimeNodeData(Generic[T]):
 
 @dataclasses.dataclass(frozen=True, eq=False)
 class Node(Generic[T]):
-    """
-    Represent an element in a `Dag`.
+    """Represent an element in a `Dag`.
 
     Stores all the runtime information about the node. This includes:
 
@@ -405,8 +401,7 @@ class Dag:
         self._metrics = DagMetrics(node_count=len(self._nodes))
 
     def const(self, value: T) -> Node[T]:
-        """
-        Add a `Node` of constant value to the `Dag`.
+        """Add a `Node` of constant value to the `Dag`.
 
         Parameters
         ----------
@@ -429,8 +424,7 @@ class Dag:
         empty_factory: Callable[[], T] | None = None,
         name: str | None = None,
     ) -> Node[T]:
-        """
-        Add a source stream `Node`.
+        """Add a source stream `Node`.
 
         Parameters
         ----------
@@ -468,8 +462,7 @@ class Dag:
         empty: T | None = None,
         empty_factory: Callable[[], T] | None = None,
     ) -> NodePrototype:
-        """
-        Add a stream `NodePrototype`.
+        """Add a stream `NodePrototype`.
 
         Stream nodes are reset to their empty value after each cycle.
         Therefore, the user must provide an `empty` value or an `empty_factory`
@@ -499,8 +492,7 @@ class Dag:
         return NodePrototype(add_to_dag)
 
     def state(self, function: Callable[P, T]) -> NodePrototype[T]:
-        """
-        Add a state `NodePrototype`.
+        """Add a state `NodePrototype`.
 
         Parameters
         ----------
@@ -518,8 +510,7 @@ class Dag:
         return NodePrototype(add_to_dag)
 
     def sink(self, name: str, input_node: Node[T]) -> Node[None]:
-        """
-        Add a sink.
+        """Add a sink.
 
         Parameters
         ----------
@@ -539,8 +530,7 @@ class Dag:
         )
 
     def now(self) -> Node[pd.Timestamp]:
-        """
-        Return a `Node` whose value is the current time.
+        """Return a `Node` whose value is the current time.
 
         The now `Node`:
 
@@ -550,8 +540,7 @@ class Dag:
         return self._silent_now_node
 
     def timer_manager(self) -> Node[TimerManager]:
-        """
-        Create a new `TimerManager` to be connected to a `Node`.
+        """Create a new `TimerManager` to be connected to a `Node`.
 
         Any node that must wake up on a timer should be connected
          to its own `TimerManager`.
@@ -572,8 +561,7 @@ class Dag:
     def cutoff(
         self, node: Node[T], comparator: Callable[[T, T], bool] = operator.eq
     ) -> Node[T]:
-        """
-        Tame the update from a `Node`, given a "cutoff" policy.
+        """Tame the update from a `Node`, given a "cutoff" policy.
 
         Parameters
         ----------
@@ -677,6 +665,7 @@ class Dag:
         self._metrics.node_count = len(self._nodes)
 
     def flush_metrics(self) -> DagMetrics:
+        """Return current metrics and reset."""
         results = self._metrics
         self._metrics = DagMetrics(node_count=len(self._nodes))
         return results
@@ -691,6 +680,7 @@ class Dag:
 
     @cached_property
     def pl(self) -> PolarsDagWrapper:
+        """Return the PolarsDagWrapper."""
         # Import dynamically because of circular dependency
         from beavers.polars_wrapper import PolarsDagWrapper
 

@@ -1,3 +1,5 @@
+"""Replay sources and sinks for PyArrow tables."""
+
 import dataclasses
 from collections.abc import Callable
 
@@ -9,9 +11,12 @@ from beavers.replay import DataSink, DataSource
 
 
 class ArrowTableDataSource(DataSource[pa.Table]):
+    """Replay data source backed by a PyArrow table."""
+
     def __init__(
         self, table: pa.Table, timestamp_extractor: Callable[[pa.Table], pa.Array]
     ):
+        """Initialize from a table and a function that extracts the timestamp column."""
         assert callable(timestamp_extractor)
         self._table = table
         self._empty_table = table.schema.empty_table()
@@ -26,6 +31,7 @@ class ArrowTableDataSource(DataSource[pa.Table]):
         self._index = 0
 
     def read_to(self, timestamp: pd.Timestamp) -> pa.Table:
+        """Read rows up to the given timestamp (inclusive)."""
         new_index = self._timestamp_column.searchsorted(timestamp, side="right")
         if new_index > self._index:
             from_index = self._index
@@ -36,6 +42,7 @@ class ArrowTableDataSource(DataSource[pa.Table]):
         return results
 
     def get_next(self) -> pd.Timestamp:
+        """Return the timestamp of the next available row, or UTC_MAX."""
         if self._index >= len(self._table):
             return UTC_MAX
         else:
@@ -44,13 +51,17 @@ class ArrowTableDataSource(DataSource[pa.Table]):
 
 @dataclasses.dataclass
 class ArrowTableDataSink(DataSink[pa.Table]):
+    """Replay data sink that collects and saves PyArrow tables."""
+
     saver: Callable[[pa.Table], None]
     chunks: list[pa.Table] = dataclasses.field(default_factory=list)
 
     def append(self, timestamp: pd.Timestamp, data: pa.Table):
+        """Append a table chunk."""
         self.chunks.append(data)
 
     def close(self):
+        """Concatenate all chunks and save."""
         if self.chunks:
             results = pa.concat_tables(self.chunks)
             self.saver(results)

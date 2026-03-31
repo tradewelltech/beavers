@@ -63,13 +63,12 @@ class PolarsDagWrapper:
         self, schema: pl.Schema, name: str | None = None
     ) -> Node[pl.DataFrame]:
         """Add a source stream of type `pl.DataFrame`."""
-
         return self._dag.source_stream(empty=schema.to_frame(), name=name)
 
     def table_stream(
         self, function: Callable[P, pl.DataFrame], schema: pl.Schema
     ) -> NodePrototype[pl.DataFrame]:
-        """Add a stream node of output type `pl.DataFrame`"""
+        """Add a stream node of output type `pl.DataFrame`."""
         return self._dag.stream(function, empty=schema.to_frame())
 
     def filter_stream(
@@ -95,6 +94,7 @@ class PolarsDagWrapper:
         return self._dag.state(_LastByKey(tuple(keys), schema.to_frame())).map(stream)
 
     def concat_series(self, *streams: Node[pl.Series]) -> Node[pl.Series]:
+        """Concatenate multiple series streams into one."""
         if len(streams) == 0:
             raise ValueError("Must pass at least one series")
         series_type = None
@@ -109,5 +109,6 @@ class PolarsDagWrapper:
         return self._dag.stream(lambda *x: pl.concat(x), empty=empty).map(*streams)
 
     def get_series(self, stream: Node[pl.DataFrame], name: str) -> Node[pl.Series]:
+        """Extract a named series from a DataFrame stream."""
         empty = _get_stream_schema(stream).to_frame()[name]
         return self._dag.stream(itemgetter(name), empty=empty).map(stream)

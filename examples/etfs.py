@@ -1,6 +1,4 @@
-"""
-Example of ETF nav (Net Asset Value) calculation
-"""
+"""Example of ETF nav (Net Asset Value) calculation"""
 
 import dataclasses
 import random

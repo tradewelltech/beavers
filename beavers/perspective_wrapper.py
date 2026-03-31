@@ -1,3 +1,5 @@
+"""Perspective table integration for beavers DAGs."""
+
 import dataclasses
 import pathlib
 from typing import Any, Literal
@@ -34,9 +36,7 @@ ASSETS_DIRECTORY = str(_SOURCE_DIRECTORY / "assets")
 
 @dataclasses.dataclass(frozen=True)
 class PerspectiveTableDefinition:
-    """
-    API table definition
-    """
+    """API table definition."""
 
     name: str
     index_column: str
@@ -49,6 +49,7 @@ class PerspectiveTableDefinition:
     limit: int | None = None
 
     def validate(self, schema: pa.Schema):
+        """Validate the definition against a PyArrow schema."""
         assert self.index_column in schema.names, self.index_column
         if self.remove_column is not None:
             assert isinstance(self.remove_column, str)
@@ -70,9 +71,7 @@ class PerspectiveTableDefinition:
 
 @dataclasses.dataclass(frozen=True)
 class _TableConfig:
-    """
-    Internal perspective table config, which is passed to the html template
-    """
+    """Internal perspective table config, which is passed to the html template."""
 
     name: str
     index: str
@@ -92,18 +91,20 @@ class _TableConfig:
 
 
 class TableRequestHandler(tornado.web.RequestHandler):
-    """Renders the table.html template, using the provided configurations"""
+    """Render the table.html template using the provided configurations."""
 
     _tables: dict[str, _TableConfig] | None = None
     _default_table: str | None = None
 
     def initialize(self, table_configs: list[_TableConfig]) -> None:
+        """Initialize the handler with table configurations."""
         self._tables = {
             table_config.name: table_config for table_config in table_configs
         }
         self._default_table = table_configs[0].name
 
     async def get(self, path: str) -> None:
+        """Render the perspective table HTML for the given path."""
         table_name = path or self._default_table
         table_config = self._tables[table_name]
 
@@ -115,7 +116,7 @@ class TableRequestHandler(tornado.web.RequestHandler):
 
 
 def _table_to_bytes(table: pa.Table) -> bytes:
-    """Serialize a table as bytes, to pass it to a perspective table"""
+    """Serialize a table as bytes, to pass it to a perspective table."""
     with pa.BufferOutputStream() as sink:
         with pa.ipc.new_stream(sink, table.schema) as writer:
             for batch in table.to_batches():
@@ -138,7 +139,7 @@ class _PerspectiveNode:
     table: perspective.Table | None = None
 
     def __call__(self, table: pa.Table) -> None:
-        """Pass the arrow data to perspective"""
+        """Pass the arrow data to perspective."""
         self.table.update(_table_to_bytes(table))
 
     def get_table_config(self) -> _TableConfig:
@@ -184,6 +185,7 @@ DATA_TYPES = [
 
 
 def to_perspective_type(data_type: pa.DataType) -> Any:
+    """Convert a PyArrow data type to a perspective type string."""
     for predicate, perspective_type in DATA_TYPES:
         if predicate(data_type):
             return perspective_type
@@ -191,6 +193,7 @@ def to_perspective_type(data_type: pa.DataType) -> Any:
 
 
 def to_perspective_schema(schema: pa.Schema) -> dict[str, Any]:
+    """Convert a PyArrow schema to a perspective schema dict."""
     return {f.name: to_perspective_type(f.type) for f in schema}
 
 
@@ -199,6 +202,7 @@ def perspective_thread(
     kafka_driver: KafkaDriver,
     nodes: list[_PerspectiveNode],
 ):
+    """Start a perspective thread that polls kafka and updates tables."""
     local_client = perspective_server.new_local_client()
     for node in nodes:
         assert node.table is None
@@ -219,6 +223,7 @@ def run_web_application(
     assets_directory: str = ASSETS_DIRECTORY,
     port: int = 8082,
 ) -> None:
+    """Run a tornado web app serving perspective tables from a KafkaDriver."""
     server = perspective.Server()
 
     nodes: list[_PerspectiveNode] = []

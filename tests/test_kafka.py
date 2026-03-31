@@ -1,6 +1,4 @@
-"""
-Unit tests for beavers.kafka
-"""
+"""Unit tests for beavers.kafka"""
 
 import dataclasses
 import io

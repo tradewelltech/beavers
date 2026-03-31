@@ -98,9 +98,7 @@ def test_pass_through_replay(replay_context: ReplayContext):
 
 
 def test_no_op_through_replay(replay_context: ReplayContext):
-    """
-    Test a corner case of the driver were a sink did not update during a cycle
-    """
+    """Test a corner case of the driver were a sink did not update during a cycle"""
     sink = ListDataSink()
     dag = Dag()
     dag.source_stream(empty=[], name="words_1")
@@ -217,9 +215,8 @@ class CornerCaseTester(DataSource[list[Word]]):
 
 
 def test_iterator_data_source_cutoff():
-    """
-    Test a tricky corner case were the underlying DataSource of
-     IteratorDataSourceAdapter doesn't behave as expected.
+    """Test a tricky corner case were the underlying DataSource of
+    IteratorDataSourceAdapter doesn't behave as expected.
     """
     timestamp = pd.to_datetime("2022-01-01", utc=True)
     adapter = IteratorDataSourceAdapter(

@@ -55,8 +55,7 @@ class OffsetPolicy(Enum):
 
 @dataclasses.dataclass(frozen=True)
 class SourceTopic(Generic[T]):
-    """
-    Configuration of a source topic.
+    """Configuration of a source topic.
 
     Do not use the constructor directly use `from_xxx` instead.
     """
@@ -73,6 +72,7 @@ class SourceTopic(Generic[T]):
     def from_latest(
         name: str, message_deserializer: KafkaMessageDeserializer[T]
     ) -> "SourceTopic[T]":
+        """Create a SourceTopic starting from the latest offset."""
         return SourceTopic(
             name=name,
             message_deserializer=message_deserializer,
@@ -83,6 +83,7 @@ class SourceTopic(Generic[T]):
     def from_earliest(
         name: str, message_deserializer: KafkaMessageDeserializer[T]
     ) -> "SourceTopic[T]":
+        """Create a SourceTopic starting from the earliest offset."""
         return SourceTopic(
             name=name,
             message_deserializer=message_deserializer,
@@ -95,6 +96,7 @@ class SourceTopic(Generic[T]):
         message_deserializer: KafkaMessageDeserializer[T],
         relative_time: pd.Timedelta,
     ) -> "SourceTopic[T]":
+        """Create a SourceTopic starting from a relative time offset."""
         return SourceTopic(
             name=name,
             message_deserializer=message_deserializer,
@@ -109,6 +111,7 @@ class SourceTopic(Generic[T]):
         start_of_day_time: pd.Timedelta,
         start_of_day_timezone: str,
     ) -> "SourceTopic[T]":
+        """Create a SourceTopic starting from start of day in a timezone."""
         return SourceTopic(
             name=name,
             message_deserializer=message_deserializer,
@@ -123,6 +126,7 @@ class SourceTopic(Generic[T]):
         message_deserializer: KafkaMessageDeserializer[T],
         absolute_time: pd.Timestamp,
     ) -> "SourceTopic[T]":
+        """Create a SourceTopic starting from an absolute timestamp."""
         return SourceTopic(
             name=name,
             message_deserializer=message_deserializer,
@@ -134,6 +138,7 @@ class SourceTopic(Generic[T]):
     def from_committed(
         name: str, message_deserializer: KafkaMessageDeserializer[T]
     ) -> "SourceTopic[T]":
+        """Create a SourceTopic starting from the last committed offset."""
         return SourceTopic(
             name=name,
             message_deserializer=message_deserializer,
@@ -411,6 +416,7 @@ class ExecutionMetrics:
 
     @contextlib.contextmanager
     def measure_serialization_time(self):
+        """Context manager to measure serialization time."""
         before = time.time_ns()
         try:
             yield
@@ -420,6 +426,7 @@ class ExecutionMetrics:
 
     @contextlib.contextmanager
     def measure_deserialization_time(self):
+        """Context manager to measure deserialization time."""
         before = time.time_ns()
         try:
             yield
@@ -429,6 +436,7 @@ class ExecutionMetrics:
 
     @contextlib.contextmanager
     def measure_execution_time(self):
+        """Context manager to measure execution time."""
         before = time.time_ns()
         try:
             yield
@@ -438,6 +446,7 @@ class ExecutionMetrics:
 
     @contextlib.contextmanager
     def measure_poll_time(self):
+        """Context manager to measure poll time."""
         before = time.time_ns()
         try:
             yield
@@ -492,6 +501,7 @@ class KafkaDriver:
         sink_topics: dict[str, KafkaMessageSerializer],
         batch_size: int = 5_000,
     ) -> "KafkaDriver":
+        """Create a KafkaDriver from config and topic definitions."""
         source_nodes = dag.get_sources()
         assert sorted(source_nodes.keys()) == sorted(source_topics.keys()), (
             source_nodes.keys(),
@@ -527,11 +537,13 @@ class KafkaDriver:
         )
 
     def flush_metrics(self) -> ExecutionMetrics:
+        """Return current metrics and reset."""
         results = self._metrics
         self._metrics = ExecutionMetrics()
         return results
 
     def run_cycle(self, poll_for_seconds: float = 1.0) -> bool:
+        """Poll kafka, execute the dag, and produce outputs. Return True if dag ran."""
         with self._metrics.measure_poll_time():
             messages = self._consumer_manager.poll(poll_for_seconds)
 

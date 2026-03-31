@@ -1,3 +1,5 @@
+"""Test utilities for beavers DAGs."""
+
 from typing import Any, TypeVar
 from collections.abc import Sequence
 
@@ -9,7 +11,10 @@ T = TypeVar("T")
 
 
 class DagTestBench:
+    """Test harness for running and asserting on DAG executions."""
+
     def __init__(self, dag: Dag):
+        """Initialize with a dag, validating each sink has exactly one node."""
         self.dag = dag
         for output_name, output_sinks in self.dag.get_sinks().items():
             assert len(output_sinks) == 1, output_name
@@ -19,11 +24,13 @@ class DagTestBench:
         source_name: str,
         source_data: Any,
     ) -> "DagTestBench":
+        """Set data on a source node."""
         source = self.dag.get_sources()[source_name]
         source.set_stream(source_data)
         return self
 
     def execute(self, now: pd.Timestamp | None = None) -> "DagTestBench":
+        """Execute the dag."""
         self.dag.execute(now)
         return self
 
@@ -32,6 +39,7 @@ class DagTestBench:
         sink_name: str,
         expected_messages: Sequence[T],
     ) -> "DagTestBench":
+        """Assert a sink's value matches the expected messages."""
         sinks = self.dag.get_sinks()[sink_name]
         assert len(sinks) == 1
         cycle_id = sinks[0].get_cycle_id()
@@ -45,6 +53,7 @@ class DagTestBench:
         return self
 
     def assert_sink_not_updated(self, sink_name: str) -> "DagTestBench":
+        """Assert a sink was not updated in the current cycle."""
         sinks = self.dag.get_sinks()[sink_name]
         assert len(sinks) == 1
         cycle_id = sinks[0].get_cycle_id()

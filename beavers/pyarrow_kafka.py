@@ -1,3 +1,5 @@
+"""Kafka sources and sinks for PyArrow tables."""
+
 import dataclasses
 import io
 import json
@@ -15,9 +17,12 @@ from beavers.kafka import (
 
 @dataclasses.dataclass(frozen=True)
 class JsonDeserializer(KafkaMessageDeserializer[pa.Table]):
+    """Deserialize Kafka messages from JSON into a PyArrow table."""
+
     schema: pa.Schema
 
     def __call__(self, messages: confluent_kafka.Message) -> pa.Table:
+        """Deserialize messages into a PyArrow table."""
         if messages:
             with io.BytesIO() as buffer:
                 for message in messages:
@@ -36,9 +41,12 @@ class JsonDeserializer(KafkaMessageDeserializer[pa.Table]):
 
 @dataclasses.dataclass(frozen=True)
 class JsonSerializer(KafkaMessageSerializer[pa.Table]):
+    """Serialize a PyArrow table into JSON Kafka messages."""
+
     topic: str
 
     def __call__(self, table: pa.Table):
+        """Serialize a PyArrow table into Kafka producer messages."""
         return [
             KafkaProducerMessage(
                 self.topic,

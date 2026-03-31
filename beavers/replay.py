@@ -19,10 +19,9 @@ T = TypeVar("T")
 
 @dataclasses.dataclass(frozen=True)
 class ReplayContext:
-    """
-    Stores the information about a replay.
+    """Stores the information about a replay.
 
-    Attributes
+    Attributes:
     ----------
     start: pd.Timestamp
         Start of the replay
@@ -48,8 +47,7 @@ class DataSource(Protocol[T]):
     """Interface for replaying historical data from a file or database."""
 
     def read_to(self, timestamp: pd.Timestamp) -> T:
-        """
-        Read from the data source, all the way to the provided timestamp (inclusive).
+        """Read from the data source, all the way to the provided timestamp (inclusive).
 
         This function is stateful and must remember the previous timestamp
          for which data was read.
@@ -59,7 +57,7 @@ class DataSource(Protocol[T]):
         timestamp
             End of the time interval for which data is required (inclusive)
 
-        Returns
+        Returns:
         -------
         data
             The data for the interval (or empty if no data is found)
@@ -67,13 +65,12 @@ class DataSource(Protocol[T]):
         """
 
     def get_next(self) -> pd.Timestamp:
-        """
-        Return the next timestamp for which there is data.
+        """Return the next timestamp for which there is data.
 
         If no data is available this should return `UTC_MAX`
 
 
-        Returns
+        Returns:
         -------
         timestamp: pd.Timestamp
             Timestamp of the next available data point (or `UTC_MAX` if no more data
@@ -86,8 +83,7 @@ class DataSink(Protocol[T]):
     """Interface for saving the results of a replay to a file or database."""
 
     def append(self, timestamp: pd.Timestamp, data: T):
-        """
-        Append data for the current cycle.
+        """Append data for the current cycle.
 
         Parameters
         ----------
@@ -106,15 +102,14 @@ class DataSourceProvider(Protocol[T]):
     """Interface for the provision of `DataSource`."""
 
     def __call__(self, replay_context: ReplayContext) -> DataSource[T]:
-        """
-        Create a `DataSource` for the given replay_context.
+        """Create a `DataSource` for the given replay_context.
 
         Parameters
         ----------
         replay_context:
             Information about the replay that's about to run
 
-        Returns
+        Returns:
         -------
         DataSource[T]:
             Source for the replay
@@ -127,15 +122,14 @@ class DataSinkProvider(Protocol[T]):
 
     @abc.abstractmethod
     def __call__(self, replay_context: ReplayContext) -> DataSink[T]:
-        """
-        Create a `DataSink` for the given replay_context.
+        """Create a `DataSink` for the given replay_context.
 
         Parameters
         ----------
         replay_context:
             Information about the replay that's about to run
 
-        Returns
+        Returns:
         -------
         DataSink[T]:
             Sink for the replay
@@ -175,8 +169,7 @@ class ReplayCycleMetrics:
 
 @dataclasses.dataclass
 class ReplayDriver:
-    """
-    Orchestrate the replay of data for dag.
+    """Orchestrate the replay of data for dag.
 
     This will:
 
@@ -188,7 +181,7 @@ class ReplayDriver:
     - collect the output data and pass it to the sink
     - close the sink at the end of the run
 
-    Notes
+    Notes:
     -----
     Do not call the constructor directly, use `create` instead
 
@@ -207,6 +200,7 @@ class ReplayDriver:
         data_source_providers: dict[str, DataSourceProvider],
         data_sink_providers: dict[str, DataSinkProvider],
     ) -> "ReplayDriver":
+        """Create a ReplayDriver from a dag, context, and providers."""
         return ReplayDriver(
             dag,
             replay_context,
@@ -216,15 +210,18 @@ class ReplayDriver:
         )
 
     def run(self):
+        """Run the replay to completion."""
         while not self.is_done():
             self.run_cycle()
         for sink in self.sinks:
             sink.data_sink.close()
 
     def is_done(self) -> bool:
+        """Return True if the replay has passed the end time."""
         return self.current_time > self.replay_context.end
 
     def run_cycle(self) -> ReplayCycleMetrics | None:
+        """Run a single replay cycle and return its metrics."""
         st = time.time_ns()
         source_records, next_timestamp = self.read_sources()
         if source_records or self.dag.get_next_timer() <= self.current_time:
@@ -257,6 +254,7 @@ class ReplayDriver:
         return metrics
 
     def read_sources(self) -> tuple[int, pd.Timestamp]:
+        """Read all sources up to current_time. Return record count and next timestamp."""
         records = 0
         next_timestamp = self.replay_context.end
         for replay_source in self.sources:
@@ -268,6 +266,7 @@ class ReplayDriver:
         return records, next_timestamp
 
     def flush_sinks(self) -> int:
+        """Flush updated sink nodes to their data sinks. Return record count."""
         records = 0
         for sink in self.sinks:
             for node in sink.nodes:
@@ -322,8 +321,7 @@ def _create_sinks(
 
 
 class IteratorDataSourceAdapter(DataSource[T]):
-    """
-    Adapter between an iterator of `DataSource` and a DataSource.
+    """Adapter between an iterator of `DataSource` and a DataSource.
 
     This can be used to stitch together various `DataSource` for incremental date range
     """
@@ -334,12 +332,14 @@ class IteratorDataSourceAdapter(DataSource[T]):
         empty: T,
         concatenator: Callable[[T, T], T],
     ):
+        """Initialize with an iterator of sources, an empty value, and a concatenator."""
         self._sources = sources
         self._empty = empty
         self._concatenator = concatenator
         self._current = self._next()
 
     def read_to(self, timestamp: pd.Timestamp) -> T:
+        """Read from the current and subsequent sources up to timestamp."""
         if self._current is None:
             return self._empty
         else:
@@ -359,6 +359,7 @@ class IteratorDataSourceAdapter(DataSource[T]):
             return this_batch
 
     def get_next(self) -> pd.Timestamp:
+        """Return the next timestamp from the current source, or UTC_MAX."""
         if self._current is None:
             return UTC_MAX
         else:
@@ -375,14 +376,15 @@ class NoOpDataSink(DataSink):
     """DataSink that does nothing."""
 
     def append(self, timestamp: pd.Timestamp, data: T):
-        pass
+        """Do nothing."""
 
     def close(self):
-        pass
+        """Do nothing."""
 
 
 class NoOpDataSinkProvider:
     """DataSinkProvider that provides a NoOpDataSink."""
 
     def __call__(self, context: ReplayContext) -> DataSink[T]:
+        """Return a NoOpDataSink."""
         return NoOpDataSink()
