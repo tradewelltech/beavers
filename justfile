@@ -1,6 +1,6 @@
 # Set up the development environment
 setup:
-    uv sync --group dev --group docs --extra pyarrow --extra confluent-kafka --extra polars
+    uv sync --all-groups --all-extras
     uvx prek install
 
 # Run tests

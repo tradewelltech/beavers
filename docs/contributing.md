@@ -2,10 +2,12 @@
 
 Welcome! We're happy to have you here. Thank you in advance for your contribution to Beavers.
 
+Most development tasks are defined in the [justfile](https://github.com/tradewelltech/beavers/blob/main/justfile).
+
 ## Development environment set up
 
 ```shell
-uv sync --group dev
+uv sync --all-groups --all-extras
 uvx prek install
 ```
 
@@ -26,15 +28,7 @@ uv run coverage report --show-missing
 
 ## New Release
 
-Tag and push:
-
-```shell
-git tag vX.X.X
-git push origin vX.X.X
-```
-
-Lastly on github, go to tags and create a release.
-The CI will deploy to pypi automatically from then.
+Create a new release, from a new tag in github. Autofill the change log.
 
 ## Testing the documentation
 
@@ -46,8 +40,4 @@ uv run --group docs mkdocs serve --livereload --watch=./
 
 - For the repo `uv lock --upgrade`
 - For the doc: `uv pip compile docs/requirements.in -o docs/requirements.txt`
-- For pre-commit: `uvx prek autoupdate`
-
-## Resources
-
-The repo set up is inspired by this [guide](https://mathspp.com/blog/how-to-create-a-python-package-in-2022)
+- For prek: `uvx prek autoupdate`
