@@ -14,12 +14,13 @@ coverage:
 
 # Run examples
 examples:
-    uv run python examples/advanced_concepts.py
-    uv run python examples/dag_concepts.py
-    uv run python examples/etfs.py
-    uv run python examples/polars_concepts.py
-    uv run python examples/pyarrow_concepts.py
-    uv run python examples/replay_concepts.py
+    uv run python -c 'import examples.advanced_concepts'
+    uv run python -c 'import examples.dag_concepts'
+    uv run python -c 'import examples.etfs'
+    uv run python -c 'import examples.polars_concepts'
+    uv run python -c 'import examples.pyarrow_concepts'
+    uv run python -c 'import examples.replay_concepts'
+    uv run python -c 'import examples.perspective_concepts'
 
 # Run linting (pre-commit on all files)
 lint:
