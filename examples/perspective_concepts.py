@@ -96,3 +96,6 @@ def run_dashboard(
 
 
 # --8<-- [end:run]
+
+if __name__ == "__main__":
+    run_dashboard()
