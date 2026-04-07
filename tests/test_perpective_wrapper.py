@@ -3,8 +3,6 @@ from unittest.mock import MagicMock
 import perspective
 import pyarrow as pa
 import pytest
-from unittest import mock
-from perspective import Server
 from tornado.testing import AsyncHTTPTestCase
 from tornado.web import Application
 
@@ -17,7 +15,6 @@ from beavers.perspective_wrapper import (
     _table_to_bytes,
     _TableConfig,
     _UpdateRunner,
-    perspective_thread,
 )
 
 PERSPECTIVE_TABLE_SCHEMA = pa.schema(
@@ -94,31 +91,6 @@ def test_add_node():
     assert nodes[0].get_table_config() == _TableConfig(
         name="name", index="index", columns=["index", "remove"], sort=[], filters=[]
     )
-
-
-class FakeLoop:
-    @staticmethod
-    def current():
-        return FakeLoop()
-
-    def add_callback(self):
-        pass
-
-    def time(self):
-        return 0
-
-    def add_timeout(self, *args, **kwargs):
-        pass
-
-    def start(self):
-        pass
-
-
-@mock.patch("tornado.ioloop.IOLoop", FakeLoop)
-def test_perspective_thread():
-    manager = Server()
-
-    perspective_thread(manager, MagicMock(), [])
 
 
 class TestHandler(AsyncHTTPTestCase):

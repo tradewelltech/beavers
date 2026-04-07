@@ -1,3 +1,11 @@
+import tornado.websocket
+import tornado.web
+import tornado.ioloop
+import perspective
+import perspective.handlers.tornado
+import threading
+from functools import partial
+from concurrent.futures import ThreadPoolExecutor
 import dataclasses
 import pathlib
 from typing import Any, Literal
@@ -208,10 +216,20 @@ def perspective_thread(
             index=node.table_definition.index_column,
         )
 
-    callback = tornado.ioloop.PeriodicCallback(
-        callback=_UpdateRunner(kafka_driver), callback_time=1_000
-    )
-    callback.start()
+    while True:
+        kafka_driver.run_cycle(1.0)
+
+
+def poll_target(lock, perspective_server):
+    try:
+        perspective_server.poll()
+    finally:
+        lock.release()
+
+
+def on_poll_request(lock, executor, perspective_server):
+    if lock.acquire(blocking=False):
+        executor.submit(poll_target, lock, perspective_server)
 
 
 def run_web_application(
@@ -219,7 +237,11 @@ def run_web_application(
     assets_directory: str = ASSETS_DIRECTORY,
     port: int = 8082,
 ) -> None:
-    server = perspective.Server()
+    executor = ThreadPoolExecutor()
+    lock = threading.Lock()
+    perspective_server = perspective.Server(
+        on_poll_request=partial(on_poll_request, lock, executor),
+    )
 
     nodes: list[_PerspectiveNode] = []
     for node in kafka_driver._dag._nodes:
@@ -230,12 +252,19 @@ def run_web_application(
         "Duplicate table name"
     )
 
+    thread = threading.Thread(
+        target=perspective_thread,
+        args=(perspective_server, kafka_driver, nodes),
+        daemon=True,
+    )
+    thread.start()
+
     web_app = tornado.web.Application(
         [
             (
                 r"/websocket",
                 PerspectiveTornadoHandler,
-                {"perspective_server": server},
+                {"perspective_server": perspective_server},
             ),
             (
                 r"/assets/(.*)",
@@ -250,7 +279,7 @@ def run_web_application(
         ],
         serve_traceback=True,
     )
+
     web_app.listen(port)
     loop = tornado.ioloop.IOLoop.current()
-    loop.call_later(0, perspective_thread, server, kafka_driver, nodes)
     loop.start()

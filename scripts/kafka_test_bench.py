@@ -72,7 +72,7 @@ SOURCE_TOPIC_CREATORS: dict[str, Callable[[str], SourceTopic]] = {
     "absolute-time": functools.partial(
         SourceTopic.from_absolute_time,
         message_deserializer=kafka_messages_to_json,
-        absolute_time=pd.Timestamp.utcnow().normalize(),
+        absolute_time=pd.Timestamp.now("UTC").normalize(),
     ),
     "committed": functools.partial(
         SourceTopic.from_committed,
