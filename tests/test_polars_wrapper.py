@@ -39,7 +39,7 @@ def test_df_stream():
 
     schema = pl.Schema([("col1", pl.Int32())])
     source = dag.pl.source_df(SIMPLE_SCHEMA)
-    node = dag.pl.df_stream(lambda x: x.select(["col1"]), schema).map(source)
+    node = dag.pl.stream(lambda x: x.select(["col1"]), schema).map(source)
 
     dag.execute()
     polars.testing.assert_frame_equal(node.get_value(), pl.DataFrame(schema=schema))
