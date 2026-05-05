@@ -86,8 +86,8 @@ etf_value_table = calculate_etf_value(
 from beavers import Dag
 
 dag = Dag()
-price_source = dag.pl.source_table(schema=PRICE_SCHEMA, name="price")
-etf_composition_source = dag.pl.source_table(
+price_source = dag.pl.source_df(schema=PRICE_SCHEMA, name="price")
+etf_composition_source = dag.pl.source_df(
     schema=ETF_COMPOSITION_SCHEMA, name="etf_composition"
 )
 # --8<-- [end:dag_source]
@@ -164,11 +164,11 @@ def get_composition_for_etfs(
     return etf_composition_state.filter(pl.col("etf").is_in(etfs))
 
 
-stale_etf_compositions = dag.pl.table_stream(
+stale_etf_compositions = dag.pl.stream(
     get_composition_for_etfs, ETF_COMPOSITION_SCHEMA
 ).map(etf_composition_state, stale_etfs)
 
-updated_etf = dag.pl.table_stream(calculate_etf_value, ETF_VALUE_SCHEMA).map(
+updated_etf = dag.pl.stream(calculate_etf_value, ETF_VALUE_SCHEMA).map(
     stale_etf_compositions, price_state
 )
 # --8<-- [end:update_all]
