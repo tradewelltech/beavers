@@ -45,12 +45,12 @@ def _get_stream_dtype(node: Node[pl.Series]) -> pl.DataType:
 
 
 @dataclasses.dataclass(frozen=True)
-class _TableFilter:
+class _DfFilter:
     predicate: tuple[IntoExprColumn | Iterable[IntoExprColumn], ...]
     constraints: dict[str, Any]
 
-    def __call__(self, table: pl.DataFrame) -> pl.DataFrame:
-        return table.filter(*self.predicate, **self.constraints)
+    def __call__(self, df: pl.DataFrame) -> pl.DataFrame:
+        return df.filter(*self.predicate, **self.constraints)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -59,14 +59,14 @@ class PolarsDagWrapper:
 
     _dag: Dag
 
-    def source_table(
+    def source_df(
         self, schema: pl.Schema, name: str | None = None
     ) -> Node[pl.DataFrame]:
         """Add a source stream of type `pl.DataFrame`."""
 
         return self._dag.source_stream(empty=schema.to_frame(), name=name)
 
-    def table_stream(
+    def stream(
         self, function: Callable[P, pl.DataFrame], schema: pl.Schema
     ) -> NodePrototype[pl.DataFrame]:
         """Add a stream node of output type `pl.DataFrame`"""
@@ -81,7 +81,7 @@ class PolarsDagWrapper:
         """Filter a stream Node of type `pl.DataFrame`."""
         schema = _get_stream_schema(stream)
         return self._dag.stream(
-            _TableFilter(tuple(predicates), dict(constraints)),
+            _DfFilter(tuple(predicates), dict(constraints)),
             empty=schema.to_frame(),
         ).map(stream)
 
