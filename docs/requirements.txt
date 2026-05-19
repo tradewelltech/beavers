@@ -79,7 +79,7 @@ platformdirs==4.3.8
     # via mkdocs-get-deps
 pygments==2.19.1
     # via mkdocs-material
-pymdown-extensions==10.15
+pymdown-extensions==10.21.3
     # via
     #   -r docs/requirements.in
     #   mkdocs-material
